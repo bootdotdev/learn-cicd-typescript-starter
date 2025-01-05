@@ -21,4 +21,6 @@ npm run dev
 
 _This starts the server in non-database mode._ It will serve a simple webpage at `http://localhost:8080`.
 
+Boot.dev's Notely app
+
 You do _not_ need to set up a database or any interactivity on the webpage yet. Instructions for that will come later in the course!
