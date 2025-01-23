@@ -29,15 +29,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-	uses: actions/checkout@v4
-                                 
+        uses: actions/checkout@v4
+
       - name: Set up Node
-	uses: actions/setup-node@v4
-	with:                      
-	  node-version: 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
 
       - name: Install dependencies
-	run: npm ci 
+        run: npm ci
 
-      - name: Run formatting check 
-	run: npm run format:check
+      - name: Run formatting check
+        run: npm run format:check
+
