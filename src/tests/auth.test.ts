@@ -16,7 +16,7 @@ describe("getApiKey", () => {
 
     test("should return null if authoriaztion headers is malformed", () => {
         const headers = { authorization: "Bearer" }; // No API key after "Bearer"
-        expect(getAPIKey(headers)).toBeCalled()
+        expect(getAPIKey(headers)).toBeNull()
     });
 
     test("should return API key if the authorization header is valid", () => {
