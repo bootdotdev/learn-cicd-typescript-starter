@@ -1,4 +1,3 @@
-import { desc } from "drizzle-orm";
 import { describe, expect, test } from "vitest";
 import { getAPIKey } from "src/api/auth";
 
