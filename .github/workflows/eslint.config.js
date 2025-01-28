@@ -1,6 +1,7 @@
 import globals from "globals";
 import pluginJs from "@eslint/js";
 import tseslint from "@typescript-eslint/eslint-plugin";
+import pluginSecurity from "eslint-plugin-security";
 
 /** @type {import('eslint').Linter.Config} */
 export default {
@@ -10,8 +11,8 @@ export default {
   },
   extends: [
     pluginJs.configs.recommended,
-    tseslint.configs.recommended, // Ensure @typescript-eslint is installed 
-and configured
+    ...tseslint.configs.recommended, 
+    pluginSecurity.configs.recommended,
   ],
 };
 
