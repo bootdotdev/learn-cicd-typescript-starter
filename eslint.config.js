@@ -1,12 +1,29 @@
+import js from "@eslint/js";
+import ts from "@typescript-eslint/eslint-plugin";
+import tsParser from "@typescript-eslint/parser";
 import globals from "globals";
-import pluginJs from "@eslint/js";
-import tseslint from "typescript-eslint";
 
-
-/** @type {import('eslint').Linter.Config[]} */
+/** @type {import("eslint").Linter.FlatConfig[]} */
 export default [
-  {files: ["**/*.{js,mjs,cjs,ts}"]},
-  {languageOptions: { globals: globals.browser }},
-  pluginJs.configs.recommended,
-  ...tseslint.configs.recommended,
+  // ✅ JavaScript Recommended Rules
+  js.configs.recommended,
+
+  // ✅ TypeScript Rules (Flat Config)
+  {
+    files: ["**/*.{ts,tsx}"],
+    languageOptions: {
+      parser: tsParser,
+      globals: {
+        ...globals.browser,
+        ...globals.node, // 👈 Fix: Adds `process` and other Node.js globals
+      },
+    },
+    plugins: {
+      "@typescript-eslint": ts,
+    },
+    rules: {
+      ...(ts.configs.recommended.rules ?? {}),
+    },
+  },
 ];
+
