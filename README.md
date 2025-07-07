@@ -24,3 +24,5 @@ _This starts the server in non-database mode._ It will serve a simple webpage at
 You do _not_ need to set up a database or any interactivity on the webpage yet. Instructions for that will come later in the course!
 
 zophar73's version of Boot.dev's Notely app.
+
+![CI Badge](https://github.com/zophar73/learn-cicd-typescript-starter/actions/workflows/ci.yml/badge.svg)
