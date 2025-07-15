@@ -28,5 +28,4 @@ jobs:
       - name: Use gcloud CLI
         run: gcloud info
       - name: Build and push Docker image
-        run: |
-          gcloud builds submit --tag us-central1-docker.pkg.dev/skilled-array-465919-i0/notely-ar-repo .
+        run: gcloud builds submit --tag us-central1-docker.pkg.dev/skilled-array-465919-i0/notely-ar-repo .
