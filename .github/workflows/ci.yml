@@ -24,4 +24,5 @@ jobs:
       - name: Run Vitest with coverage
         run: npm run test -- --coverage
 
- 
+      - name: Force Failure
+        run: (exit 1)
