@@ -1,14 +1,10 @@
-One cool feature on GitHub is that you can add a dynamic badge to your README.md file that shows the status of your tests.
-
-It's a great way to show off that your code is well-tested, and that the tests are passing without users having to go check the actions tab.
+Now that we have setup linting on the project locally, lets get it working on our CI runner.
 
 Assignment
-Add a badge to the top of your README.md file that shows the status of your tests. The syntax for the URL of the dynamically generated image is:
-https://github.com/<OWNER>/<REPOSITORY>/actions/workflows/<WORKFLOW_FILE>/badge.svg
+Add a new step to the same "style" job that currently only checks for formatting issues. Run npm run lint after npm run format:check to make sure that formatting and linting issues are caught by our pipeline.
 
-Your README.md file is written in markdown, and the syntax for adding an image is:
+Commit and push your changes with the unused function to your branch with the open pull request. You should see your CI workflow fail since npm run lint will catch the unused function.
 
-![alt text goes here](IMAGE_URL)
+Once you've verified that your CI workflow fails, remove the unused function and commit and push your changes again. Your CI workflow should now pass!
 
-Commit and push your changes to GitHub, then merge them. Once your changes are merged into your main branch, you should see the badge appear on the main page of your repository in the rendered README.
 Paste the URL of your GitHub repo into the box and run the GitHub checks.

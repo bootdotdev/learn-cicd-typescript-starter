@@ -40,10 +40,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Prettier formatter 
+      - name: Run Prettier and ESLint fix
         run: |
-          npm run format:check
-          npm run lint
+          npm run format:write
+          npm run lint -- --fix
+
+      - name: Check for uncommitted changes
+        run: |
+          git diff --exit-code
 
       - name: Check linting
         run: npm run lint -- --max-warnings=0
