@@ -25,7 +25,7 @@ jobs:
         run: npm run test -- --coverage
 
   formatter:
-    name: Formatter
+    name: Style
     runs-on: ubuntu-latest
 
     steps:
@@ -40,5 +40,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Prettier formatter
-        run: npm run format:check
+      - name: Run Prettier formatter and Lint
+        run: |
+          npm run format:check
+          npm run lint
+        
