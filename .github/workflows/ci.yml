@@ -16,7 +16,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '18'  # Changed from [18,20] to single version string
+          node-version: '18' 
 
       - name: Install dependencies
         run: npm ci
@@ -29,14 +29,6 @@ jobs:
         with:
           name: vitest-coverage
           path: coverage/
-          retention-days: 7
-
-      - name: Upload HTML report
-        if: success()
-        uses: actions/upload-artifact@v3
-        with:
-          name: vitest-html-report
-          path: coverage/html/
           retention-days: 7
 
       - name: Force Failure
