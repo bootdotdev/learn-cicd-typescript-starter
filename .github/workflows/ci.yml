@@ -24,10 +24,7 @@ jobs:
       - name: Run Vitest with coverage
         run: npm run test -- --coverage
 
-    branches: [main]
-
-jobs:
-  tests:
+  formatter:
     name: Formatter
     runs-on: ubuntu-latest
 
