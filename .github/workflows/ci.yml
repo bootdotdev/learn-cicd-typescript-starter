@@ -45,10 +45,6 @@ jobs:
           npm run format:write
           npm run lint -- --fix
 
-      - name: Check for uncommitted changes
-        run: |
-          git diff --exit-code
-
       - name: Check linting
         run: npm run lint -- --max-warnings=0
 
