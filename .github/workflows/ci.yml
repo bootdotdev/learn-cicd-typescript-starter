@@ -24,12 +24,6 @@ jobs:
       - name: Run Vitest with coverage
         run: npm run test -- --coverage
 
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v3
-        with:
-          name: vitest-coverage
-          path: coverage/
-          retention-days: 7
 
       - name: Force Failure
         run: (exit 1)
