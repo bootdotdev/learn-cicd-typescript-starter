@@ -1,12 +1,12 @@
-import express from "express";
 import cors from "cors";
+import express from "express";
 import path from "path";
+import { middlewareAuth } from "./api/middleware.js";
+import { handlerNotesCreate, handlerNotesGet } from "./api/notes.js";
+import { handlerReadiness } from "./api/readiness.js";
+import { handlerUsersCreate, handlerUsersGet } from "./api/users.js";
 import { config } from "./config.js";
 import { db } from "./db/index.js";
-import { middlewareAuth } from "./api/middleware.js";
-import { handlerReadiness } from "./api/readiness.js";
-import { handlerNotesCreate, handlerNotesGet } from "./api/notes.js";
-import { handlerUsersCreate, handlerUsersGet } from "./api/users.js";
 
 const __dirname = path.resolve();
 
