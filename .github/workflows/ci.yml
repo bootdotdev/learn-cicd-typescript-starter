@@ -18,5 +18,11 @@ jobs:
         with:
           node-version: 18
 
-      - name: Check node version
-        run: node --version
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run test
+        run: npm run test
+
+      - name: Force fail step
+        run: exit 1
