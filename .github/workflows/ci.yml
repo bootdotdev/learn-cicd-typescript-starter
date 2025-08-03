@@ -22,7 +22,4 @@ jobs:
         run: npm ci
 
       - name: Run test
-        run: npm run test
-
-      - name: Force fail step
-        run: exit 1
+        run: npm run testss
