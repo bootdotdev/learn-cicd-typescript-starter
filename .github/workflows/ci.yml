@@ -18,5 +18,8 @@ jobs:
         with:
           node-version: 18
 
-      - name: Force Failure
-        run: node --version
+      - name: Install dependencies
+        run: npm cix
+
+      - name: karen test
+        run: npm run test        
