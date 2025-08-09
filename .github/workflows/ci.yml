@@ -24,5 +24,8 @@ jobs:
       - name: Install dependencies
         run: npm install -D vitest
 
+      - name: Install dependencies
+        run: npm i -D @vitest/coverage-v8
+
       - name: Run unit test
-        run: npm run test        
+        run: npm run test --coverage        
