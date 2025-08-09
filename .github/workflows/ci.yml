@@ -19,7 +19,7 @@ jobs:
           node-version: 18
 
       - name: Install dependencies
-        run: npm cix
+        run: npm ci
 
       - name: karen test
         run: npm run test        
