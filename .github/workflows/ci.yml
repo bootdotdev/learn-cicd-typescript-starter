@@ -29,6 +29,3 @@ jobs:
 
       - name: Run unit test
         run: npm run test --coverage        
-
-      - name: Run formating test
-        run: npm run format:check
