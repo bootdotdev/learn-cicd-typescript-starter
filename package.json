@@ -10,7 +10,9 @@
     "build": "npx tsc",
     "start": "node dist/main.js",
     "dev": "npx tsc && node dist/main.js",
-    "test": "vitest --run"
+    "test": "vitest --run",
+    "format:write": "prettier --write \"src/**/*.{js,ts,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{js,ts,json,css,md}\""
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
