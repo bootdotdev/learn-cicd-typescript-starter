@@ -1,4 +1,8 @@
-![badge for tests](https://github.com/OmanTgl/learn-cicd-typescript-starter/actions/workflows/ci.yml/badge.svg)
+<<<<<<< HEAD
+![badge for tests] (https://github.com/OmanTgl/learn-cicd-typescript-starter/actions/workflows/ci.yml/badge.svg)
+=======
+![badge for tests] (https://github.com/OmanTgl/learn-cicd-typescript-starter/actions/workflows/ci.yml/badge.svg)
+>>>>>>> a63f2f1 (new change)
 
 # learn-cicd-typescript-starter (Notely)
 
