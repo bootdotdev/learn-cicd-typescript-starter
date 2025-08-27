@@ -26,3 +26,22 @@ jobs:
 
       - name: Run unit tests
         run: npm run test -- --coverage
+
+  style:
+    name: Style
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        run: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Check style
+        run: npm run format:write
