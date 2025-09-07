@@ -1,3 +1,5 @@
+![Badge to check tests](https://github.com/Sonualam-bot/learn-cicd-typescript-starter/actions/workflows/ci.yml/badge.svg)
+
 # learn-cicd-typescript-starter (Md Sonu Alam's Notely)
 
 This repo contains the typescript starter code for the "Md Sonu Alam's Notely" application for the "Learn CICD" course on [Boot.dev](https://boot.dev).
