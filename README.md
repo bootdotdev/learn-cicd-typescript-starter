@@ -1,6 +1,6 @@
-# learn-cicd-typescript-starter (Notely)
+# learn-cicd-typescript-starter (Md Sonu Alam's Notely)
 
-This repo contains the typescript starter code for the "Notely" application for the "Learn CICD" course on [Boot.dev](https://boot.dev).
+This repo contains the typescript starter code for the "Md Sonu Alam's Notely" application for the "Learn CICD" course on [Boot.dev](https://boot.dev).
 
 ## Local Development
 
