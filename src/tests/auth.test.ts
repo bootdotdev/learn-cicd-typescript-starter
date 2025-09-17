@@ -29,6 +29,6 @@ describe("getAPIKey", () => {
             authorization: 'ApiKey valid-api-key'
         };
         const result = getAPIKey(headers);
-        expect(result).toBeNull();
+        expect(result).toBe("valid-api-key");
     });
 });
