@@ -26,3 +26,10 @@ jobs:
 
       - name: Test
         run: npm run test -- --coverage
+  style: 
+    name: Style
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Format code
+        uses: npm run format:check
