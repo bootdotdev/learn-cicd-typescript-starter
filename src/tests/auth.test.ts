@@ -32,4 +32,3 @@ describe("getAPIKey", () => {
     expect(result).toBe("valid-api-key");
   });
 });
-
