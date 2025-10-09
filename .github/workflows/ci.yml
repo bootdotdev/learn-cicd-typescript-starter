@@ -31,5 +31,5 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Format code
+      - name: Check code format
         uses: npm run format:check
