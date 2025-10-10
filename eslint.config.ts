@@ -1,8 +1,10 @@
 import js from "@eslint/js";
 import globals from "globals";
 import tseslint from "typescript-eslint";
+import { defineConfig } from "eslint/config";
+import pluginSecurity from "eslint-plugin-security";
 
-export default tseslint.config(
+export default defineConfig(tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -14,4 +16,6 @@ export default tseslint.config(
       },
     },
   },
-);
+  tseslint.configs.recommended,
+  pluginSecurity.configs.recommended
+));
