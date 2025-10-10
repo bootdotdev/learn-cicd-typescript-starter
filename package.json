@@ -11,6 +11,7 @@
     "start": "node dist/main.js",
     "dev": "npx tsc && node dist/main.js",
     "test": "vitest --run"
+  
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
