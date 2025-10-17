@@ -31,7 +31,6 @@ describe("getAPIKey", () => {
 			authorization: "ApiKey " + apiKey
 		}
 		const key = getAPIKey(headers);
-		//expect(key).toEqual(apiKey)
-		expect(key).toBeNull()
+		expect(key).toEqual(apiKey)
 	});
 });
