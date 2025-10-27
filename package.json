@@ -7,18 +7,22 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "build": "npx tsc",
+    "build": "tsc",
     "start": "node dist/main.js",
-    "dev": "npx tsc && node dist/main.js"
+    "dev": "tsc && node dist/main.js",
+    "test": "vitest --run",
+    "coverage": "vitest run --coverage"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/node": "^22.9.0",
+    "@vitest/coverage-v8": "^4.0.4",
     "drizzle-kit": "^0.28.1",
     "globals": "^15.12.0",
     "tsx": "^4.19.2",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vitest": "^4.0.4"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",
