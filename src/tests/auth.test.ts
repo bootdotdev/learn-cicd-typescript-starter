@@ -32,6 +32,6 @@ describe("auth", () => {
     };
     const result = getAPIKey(headers);
 
-    expect(result).toBe("test");
+    expect(result).toBe(mockApiKey);
   });
 });
