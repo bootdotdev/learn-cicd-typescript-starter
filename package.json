@@ -10,7 +10,8 @@
     "build": "tsc",
     "start": "node dist/main.js",
     "dev": "tsc && node dist/main.js",
-    "test": "vitest run --coverage"
+    "test": "vitest --run",
+    "coverage": "vitest run --coverage"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
