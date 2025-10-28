@@ -8,17 +8,29 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "build": "npx tsc",
+    "test": "vitest --run",
     "start": "node dist/main.js",
-    "dev": "npx tsc && node dist/main.js"
+    "dev": "npx tsc && node dist/main.js",
+    "format:write": "prettier --write \"src/**/*.{js,ts,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{js,ts,json,css,md}\"",
+    "lint": "eslint ."
   },
   "devDependencies": {
+    "@eslint/js": "^9.38.0",
     "@types/cors": "^2.8.17",
+    "@types/eslint-plugin-security": "^3.0.0",
     "@types/express": "^5.0.0",
     "@types/node": "^22.9.0",
+    "@vitest/coverage-v8": "^3.2.4",
     "drizzle-kit": "^0.28.1",
-    "globals": "^15.12.0",
+    "eslint": "^9.38.0",
+    "eslint-plugin-security": "^3.0.1",
+    "globals": "^15.15.0",
+    "prettier": "3.6.2",
     "tsx": "^4.19.2",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.46.1",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",
@@ -26,6 +38,8 @@
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.36.2",
     "express": "^4.21.1",
+    "jiti": "^2.6.1",
+    "turso": "^0.1.0",
     "uuid": "^11.0.3"
   },
   "prettier": {

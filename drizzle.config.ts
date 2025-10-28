@@ -7,6 +7,6 @@ export default defineConfig({
   schema: "./src/db/schema.ts",
   dialect: "turso",
   dbCredentials: {
-    url: config.db.url || "",
-  },
+    url: process.env.DATABASE_URL || "", // use the DATABASE_URL environment variable
+  }, //
 });
