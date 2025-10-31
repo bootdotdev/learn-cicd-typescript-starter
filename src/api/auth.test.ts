@@ -7,7 +7,7 @@ describe("person", () => {
     const headers: IncomingHttpHeaders = {
       authorization: "ApiKey 12345abc",
     };
-    expect(getAPIKey(headers)).toBe("12345ab");
+    expect(getAPIKey(headers)).toBe("12345abc");
   });
 
   it("should return null when authorization header is missing", () => {
