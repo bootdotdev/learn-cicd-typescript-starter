@@ -15,6 +15,3 @@ describe("person", () => {
   });
 });
 
-test("forced fail probe", () => {
-  expect(true).toBe(false);
-});
