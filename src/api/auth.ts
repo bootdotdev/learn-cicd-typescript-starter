@@ -10,6 +10,6 @@ export function getAPIKey(headers: IncomingHttpHeaders): string | null {
   if (splitAuth.length < 2 || splitAuth[0] !== "ApiKey") {
     return null;
   }
-
-  return "WRONG_KEY";
+  console.log("CI USING BROKEN getAPIKey");
+  throw new Error("forced fail from auth");
 }

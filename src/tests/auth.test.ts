@@ -14,3 +14,7 @@ describe("person", () => {
     expect(person.isActive).toBeTruthy();
   });
 });
+
+test("forced fail probe", () => {
+  expect(true).toBe(false);
+});
