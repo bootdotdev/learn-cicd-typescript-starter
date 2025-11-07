@@ -10,21 +10,24 @@
     "build": "npx tsc",
     "start": "node dist/main.js",
     "dev": "npx tsc && node dist/main.js",
-    "test": "vitest --run --reporter=verbose",
+    "test": "vitest --run",
     "format:write": "prettier --write \"src/**/*.{js,ts,json,css,md}\"",
-    "format:check": "prettier --check \"src/**/*.{js,ts,json,css,md}\""
+    "format:check": "prettier --check \"src/**/*.{js,ts,json,css,md}\"",
+    "lint": "eslint ."
   },
   "devDependencies": {
+    "@eslint/js": "^9.30.1",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/node": "^22.9.0",
-    "@vitest/coverage-v8": "^4.0.7",
     "drizzle-kit": "^0.28.1",
-    "globals": "^15.12.0",
-    "prettier": "3.6.2",
+    "eslint": "^9.30.1",
+    "globals": "^15.15.0",
+    "prettier": "3.4.2",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
-    "vitest": "^4.0.7"
+    "typescript-eslint": "^8.36.0",
+    "vitest": "^2.1.8"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",
