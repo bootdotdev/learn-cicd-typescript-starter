@@ -8,9 +8,9 @@ const person = {
 describe("person", () => {
   test("person is defined", () => {
     expect(person).toBeDefined();
-  }});
+  });
 
-test("is active", () => {
-  expect(person.isActive).toBeTruthy();
-});
+  test("is active", () => {
+    expect(person.isActive).toBeTruthy();
+  });
 });
