@@ -8,7 +8,7 @@ on:
 jobs:
   tests:
     name: Tests
-    runs_on: unbuntu-latest
+    runs-on: unbuntu-latest
     
 
 
