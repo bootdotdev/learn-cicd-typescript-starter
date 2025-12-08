@@ -1,5 +1,6 @@
 name: ci
 
+
 on:
   pull_request:
     branches: [main]
@@ -23,5 +24,5 @@ jobs:
         with:
           node version: 18
 
-      - name: Force Faliure
-        run: (exit 1)
+      - name: Node version
+        run: node --version
