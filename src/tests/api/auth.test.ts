@@ -47,5 +47,3 @@ describe("getAPIKey", () => {
     expect(getAPIKey(headers)).toBe("");
   });
 });
-
-
