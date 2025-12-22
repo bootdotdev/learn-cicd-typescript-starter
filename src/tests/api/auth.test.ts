@@ -30,7 +30,7 @@ describe("getAPIKey", () => {
 
   it("returns the API key when authorization header is valid", () => {
     const headers: IncomingHttpHeaders = {
-      authorization: "ApiKeymy-secret-key",
+      authorization: "ApiKey my-secret-key",
     };
     expect(getAPIKey(headers)).toBe("my-secret-key");
   });
