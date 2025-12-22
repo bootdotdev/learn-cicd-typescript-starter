@@ -9,7 +9,8 @@
     "db:studio": "drizzle-kit studio",
     "build": "npx tsc",
     "start": "node dist/main.js",
-    "dev": "npx tsc && node dist/main.js"
+    "dev": "npx tsc && node dist/main.js",
+    "test": "vitest --run"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
@@ -18,7 +19,8 @@
     "drizzle-kit": "^0.28.1",
     "globals": "^15.12.0",
     "tsx": "^4.19.2",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vitest": "^4.0.16"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",
