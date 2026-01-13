@@ -1,0 +1,63 @@
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: notely-480100
+
+      - name: Use gcloud CLI
+        run: gcloud info
+
+      - name: Who am I?
+        run: |
+          gcloud auth list
+          gcloud config get-value account
+          gcloud config list
+
+      - name: Test Cloud Build bucket write
+        run: |
+          echo "test" > /tmp/cb.txt
+          gcloud storage cp /tmp/cb.txt gs://notely-480100_cloudbuild/_gha_test/cb.txt
+          gcloud storage ls gs://notely-480100_cloudbuild/_gha_test/
+
+
+      - name: Build and push Docker image
+        run: gcloud builds submit --gcs-source-staging-dir=gs://notely-480100-cb-staging/source --tag us-central1-docker.pkg.dev/notely-480100/notely-ar-repo/notely:latest .
+
+      - name: Run migrations
+        run: npm run db:migrate
+
+      - name: Deploy to Cloud Run
+        run: gcloud run deploy notely --image us-central1-docker.pkg.dev/notely-480100/notely-ar-repo/notely:latest --region us-central1 --allow-unauthenticated --project notely-480100 --max-instances=4
+
+    
