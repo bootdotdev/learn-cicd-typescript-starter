@@ -1,0 +1,40 @@
+name: Build and Push to Artifact Registry
+
+on:
+  push:
+    branches: [ "main" ] # mainブランチにpushされたら実行
+
+jobs:
+  deploy: # 任意のジョブ名
+    runs-on: ubuntu-latest
+    steps:
+    - name: 'Checkout'
+      uses: 'actions/checkout@v4'
+  
+    - name: 'Build the app'
+      run: |
+        npm ci
+        npx tsc --version # デバッグ用にtscのバージョンを表示
+        npm run build
+
+      # Step 1: Authenticate with GCP
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: '${{ secrets.GCP_CREDENTIALS }}' # The secret you just created
+
+      # Step 2: Set up the gcloud CLI
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v2'
+      with:
+        project_id: 'notely-485406'
+
+    # Step 4: Configure Docker to use gcloud as a credential helper
+    - name: 'Docker Auth'
+      run: |-
+          gcloud auth configure-docker us-central1-docker.pkg.dev
+
+    # Step 4: Build and Push the Docker image
+    - name: Build and push Docker image
+      run: gcloud builds submit --tag us-central1-docker.pkg.dev/notely-485406/notely-ar-repo/my-app:${{ github.sha }} .
