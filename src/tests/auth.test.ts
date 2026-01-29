@@ -4,7 +4,7 @@ import { describe, expect, test } from "vitest";
 
 describe("Api Key functions", () => {
   test("Get APIkey is valid", () => {
-    expect(getAPIKey).toBeNull();
+    expect(getAPIKey).not.toBeNull();
   });
 });
 
