@@ -1,0 +1,33 @@
+name: CD
+on:
+  push:
+    branches: [ main ]
+jobs:
+  Deploy:
+    runs-on: ubuntu-latest
+    env:
+      GCP_PROJECT_ID: intense-optics-472820-m4
+      ARTIFACT_REGION: europe-west10
+      ARTIFACT_REPOSITORY: notely-ar-repo
+      IMAGE_NAME: notely
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build app
+        run: npm run build
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_CREDENTIALS }}
+      - name: Build & push image to Artifact Registry (Cloud Build)
+        run: |
+          TAG="${{ github.sha }}"
+          gcloud builds submit \
+            --tag "${{ env.ARTIFACT_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REPOSITORY }}/${{ env.IMAGE_NAME }}:${TAG}" .
+

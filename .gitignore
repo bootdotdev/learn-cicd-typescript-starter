@@ -3,3 +3,4 @@ coverage/
 dist/
 .env
 .vscode
+gcp-sa-key.json
