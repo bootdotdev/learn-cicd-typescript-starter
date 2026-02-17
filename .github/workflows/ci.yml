@@ -8,7 +8,6 @@ jobs:
   tests:
     name: Tests
     runs-on: ubuntu-latest
-
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -45,3 +44,17 @@ jobs:
         
         - name: Lint check
           run: npm run lint -- --max-warnings=0
+  gcp:
+    runs-on: ubuntu-latest
+    steps:
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v3'
+    
+    - name: 'Use gcloud CLI'
+      run: 'gcloud info'
+
