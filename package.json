@@ -8,6 +8,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "build": "npx tsc",
+    "test": "vitest --run",
     "start": "node dist/main.js",
     "dev": "npx tsc && node dist/main.js"
   },
