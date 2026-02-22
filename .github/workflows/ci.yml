@@ -24,3 +24,4 @@ jobs:
       - name: Run tests
         run: npm run test --coverage # coverage is the measure of how much of your code is being tested
                                      # printing it in the console in the actions tab
+                                     
