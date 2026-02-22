@@ -1,27 +1,41 @@
 name: cd
 
 on:
-    push:
-        branches: [main]
-    
+  push:
+    branches: [main]
+
 jobs:
-    deploy:
-        name: Deploy
-        runs-on: ubuntu-latest
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-            - name: Set up node
-              uses: actions/setup-node@v4
-              with:
-                node-version: 22
-            
-            - name: Install dependencies 
-              run: npm ci
+      - name: Set up node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
-            - name: Build
-              run: npm run build
+      - name: Install dependencies
+        run: npm ci
 
+      - name: Build
+        run: npm run build
 
+      # Authenticate to GCP using service account JSON
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      # Install gcloud CLI
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: imposing-cinema-488216-h7
+
+      # Build and push Docker image to Artifact Registry
+      - name: Build and push image
+        run: gcloud builds submit --tag us-central1-docker.pkg.dev/imposing-cinema-488216-h7/notely-ar-repo/notely:latest .
