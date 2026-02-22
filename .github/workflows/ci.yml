@@ -18,5 +18,8 @@ jobs:
         with:
           node-version: 22
 
-      - name: Force Failure
-        run: node --version
+      - name: Install dependencies # i need vitest to run my tests, so i need 
+        run: npm ci                # CI runner to install my dependencies
+
+      - name: Run tests
+        run: npm run test
