@@ -38,4 +38,5 @@ jobs:
 
       # Build and push Docker image to Artifact Registry
       - name: Build and push image
-        run: gcloud builds submit --tag us-central1-docker.pkg.dev/imposing-cinema-488216-h7/notely-ar-repo/notely:latest .
+        run: |
+            gcloud builds submit --tag us-central1-docker.pkg.dev/imposing-cinema-488216-h7/notely-ar-repo/notely:latest .
