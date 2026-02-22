@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write  # ضروري للمصادقة مع GCP
+      id-token: write
 
     steps:
       - name: Checkout code
@@ -32,11 +32,8 @@ jobs:
 
       - name: Configure Docker for Artifact Registry
         run: |-
-          gcloud auth configure-docker me-central1-docker.pkg.dev --quiet
-          # غيّر me-central1 إلى المنطقة التي تستخدمها إن كانت مختلفة
+          gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
 
-      - name: Build and Push Docker Image
+      - name: Build and Push with Cloud Build
         run: |
-          docker build -t me-central1-docker.pkg.dev/eternal-photon-488219-g5/REPOSITORY/IMAGE:TAG .
-          docker push me-central1-docker.pkg.dev/eternal-photon-488219-g5/REPOSITORY/IMAGE:TAG
-        # استبدل REPOSITORY و IMAGE و TAG بقيمك الفعلية
+          gcloud builds submit --tag us-central1-docker.pkg.dev/eternal-photon-488219-g5/notely-ar-repo/notely:latest .
