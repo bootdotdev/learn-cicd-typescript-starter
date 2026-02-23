@@ -21,5 +21,8 @@ jobs:
       - name: Check Node Version and install dependencies
         run: node --version && npm ci
 
+      - name: Formatting Codebase
+        run: npm run format:check
+
       - name: run tests
         run: npm run test -- --coverage
