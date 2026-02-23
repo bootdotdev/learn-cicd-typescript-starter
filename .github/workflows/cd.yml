@@ -9,6 +9,9 @@ jobs:
     name: Deploy
     runs-on: ubuntu-latest
 
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -40,6 +43,9 @@ jobs:
       - name: Build and push image
         run: |
             gcloud builds submit --tag us-central1-docker.pkg.dev/imposing-cinema-488216-h7/notely-ar-repo/notely:latest .
+      
+      - name: Run migrations
+        run: npm run db:migrate
       
       - name: Deploy to Cloud Run
         run: |
