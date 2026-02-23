@@ -1,0 +1,39 @@
+name: Build and Push to Artifact Registry
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies and build
+        run: |
+          npm install
+          npm run build
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/999336690800/locations/global/workloadIdentityPools/github-actions-pool/providers/github-oidc-provider'
+          service_account: 'cloud-run-deployer-20@eternal-photon-488219-g5.iam.gserviceaccount.com'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: |-
+          gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+
+      - name: Build and Push with Cloud Build
+        run: |
+          gcloud builds submit --tag us-central1-docker.pkg.dev/eternal-photon-488219-g5/notely-ar-repo/notely:latest .

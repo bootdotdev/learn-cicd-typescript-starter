@@ -5,6 +5,7 @@
     "module": "esnext",
     "rootDir": "./src",
     "outDir": "./dist",
+    "types": [ "vitest" ],
     "strict": true,
     "moduleResolution": "Node",
     "esModuleInterop": true,
