@@ -1,5 +1,6 @@
 import { IncomingHttpHeaders } from "http";
 
+// This module provides a function to extract an API key from the request headers.
 export function getAPIKey(headers: IncomingHttpHeaders): string | null {
   const authHeader = headers["authorization"];
   if (!authHeader) {

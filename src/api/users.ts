@@ -22,7 +22,7 @@ export async function handlerUsersCreate(req: Request, res: Response) {
     if (user) {
       respondWithJSON(res, 201, user);
     } else {
-      respondWithError(res, 500, "Couldn't retrieve user");
+      respondWithError(res, 500, "Couldn't retrieve user from database");
     }
   } catch (err) {
     respondWithError(res, 500, "Couldn't create user", err);
