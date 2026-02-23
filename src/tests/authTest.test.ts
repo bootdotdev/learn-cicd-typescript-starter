@@ -11,6 +11,6 @@ describe("getAPIKey", () => {
   });
 
   test("valid key", () => {
-    expect(getAPIKey({ authorization: "apiKey abc-123" })).toBe("abc-123");
+    expect(getAPIKey({ authorization: "ApiKey abc-123" })).toBe("abc-123");
   });
 });
