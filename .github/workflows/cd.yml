@@ -7,7 +7,7 @@ on:
 
 jobs:
   tests:
-    name: Deploy
+    name: Build
     runs-on: ubuntu-latest
 
     steps:
@@ -24,3 +24,22 @@ jobs:
 
       - name: Build the app
         run: npm run build
+
+  job_id:
+    name: Deploy to Artifact Registry
+    runs-on: ubuntu-latest
+
+    steps:
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: "${{ secrets.GCP_CREDENTIALS}}"
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Use gcloud CLI
+        run: gcloud info
+
+      - name: Build Docker image and push to Google Artifact Registry
+        run: gcloud builds submit --tag us-central1-docker.pkg.dev/notely-488421/notely-ar-repo/notely:latest .
