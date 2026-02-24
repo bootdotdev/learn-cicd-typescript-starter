@@ -1,0 +1,26 @@
+# run the deployment pipeline when the code is merged after the ci pipeline
+name: cd
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  tests:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the app
+        run: npm run build
