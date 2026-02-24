@@ -8,7 +8,7 @@ describe("getAPIKey", () => {
     } as any;
 
     const result = getAPIKey(headers);
-    expect(result).toBe("test-key-123");
+expect(result).toBe("WRONG");
   });
 
   test("returns null when header missing", () => {
