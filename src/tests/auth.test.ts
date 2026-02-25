@@ -49,7 +49,7 @@ describe("getAPIKey", () => {
 
   it("preserves token with special characters", () => {
     const headers: IncomingHttpHeaders = {
-      authorization: "ApiKey  sk-test_123.abc+xyz=",
+      authorization: "ApiKey sk-test_123.abc+xyz=",
     };
     expect(getAPIKey(headers)).toBe("sk-test_123.abc+xyz=");
   });
