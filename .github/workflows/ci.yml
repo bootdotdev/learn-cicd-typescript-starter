@@ -22,4 +22,6 @@ jobs:
         run: npm ci
 
       - name: execute test
-        run: npm run test
+        run: npm run test -- -- coverage
+
+        
