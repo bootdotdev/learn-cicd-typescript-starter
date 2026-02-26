@@ -29,13 +29,13 @@
       const API_BASE = "/v1";
       let currentUserAPIKey = null;
       let currentUser = null;
-
+      // i remove comment
       async function createNote() {
         if (!currentUser) {
           alert("Please create a user first");
           return;
         }
-        const noteContent = document.getElementById("newNoteContent").value;
+         const noteContent = document.getElementById("newNoteContent").value;
         const response = await fetchWithAlert(`${API_BASE}/notes`, {
           method: "POST",
           headers: {
@@ -46,7 +46,7 @@
         });
         const note = await response.json();
         displayNote(note);
-      }
+      } 
 
       async function getUser() {
         const response = await fetchWithAlert(`${API_BASE}/users`, {
