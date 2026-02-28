@@ -7,7 +7,6 @@ import { middlewareAuth } from "./api/middleware.js";
 import { handlerReadiness } from "./api/readiness.js";
 import { handlerNotesCreate, handlerNotesGet } from "./api/notes.js";
 import { handlerUsersCreate, handlerUsersGet } from "./api/users.js";
-import process from "process";
 
 const __dirname = path.resolve();
 
