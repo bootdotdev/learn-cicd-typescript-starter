@@ -41,6 +41,6 @@ jobs:
           docker build -t us-central1-docker.pkg.dev/notely-488819/notely-ar-repo/notely-app:latest .
 
       # Push image to Artifact Registry
-      - name: Push Docker image
+      - name: gcloud builds submit
         run: |
           docker push us-central1-docker.pkg.dev/notely-488819/notely-ar-repo/notely-app:latest
