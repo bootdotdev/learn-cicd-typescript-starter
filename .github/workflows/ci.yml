@@ -18,11 +18,8 @@ jobs:
         with:
           node-version: 22
 
-      - name: Enable Corepack
-        run: corepack enable
-
       - name: Install dependencies
-        run: yarn install --immutable
+        run: npm ci
 
       - name: Run tests
-        run: yarn run test --coverage
+        run: npm run test -- --coverage
