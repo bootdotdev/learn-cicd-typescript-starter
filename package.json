@@ -15,9 +15,9 @@
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
-    "@types/node": "^22.9.0",
+    "@types/node": "^22.12.0",
     "@vitest/coverage-v8": "^4.0.18",
-    "drizzle-kit": "^0.31.8",
+    "drizzle-kit": "^0.18.1",
     "globals": "^15.12.0",
     "tsx": "^4.19.2",
     "typescript": "^5.9.3",
@@ -38,5 +38,7 @@
     "semi": true,
     "singleQuote": false
   },
-  "packageManager": "yarn@4.5.3+sha512.3003a14012e2987072d244c720506549c1aab73ee728208f1b2580a9fd67b92d61ba6b08fe93f6dce68fd771e3af1e59a0afa28dd242dd0940d73b95fedd4e90"
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "*"
+  }
 }

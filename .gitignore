@@ -3,3 +3,4 @@ coverage/
 dist/
 .env
 .vscode
+.yarn/install-state.gz
