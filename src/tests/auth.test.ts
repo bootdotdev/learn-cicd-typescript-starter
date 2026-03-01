@@ -4,25 +4,19 @@ import { getAPIKey } from "../api/auth";
 
 describe("getAPIKey", () => {
 
-  test("should return a non-empty string when authorization header is present", () => {
-    const headers = {
-      authorization: "Bearer 12345abcde"
-    };
-
+  test("returns the API key if authorization header exists", () => {
+    const headers = { authorization: "Bearer 12345abcde" };
     const key = getAPIKey(headers);
-    expect(key).toBeDefined();
-    expect(typeof key).toBe("string");
-    expect(key.length).toBeGreaterThan(0);
     expect(key).toBe("12345abcde");
   });
 
-  test("should return null when authorization header is missing", () => {
-    const headers = {}; // no authorization key
+  test("returns null if authorization header is missing", () => {
+    const headers = {};
     const key = getAPIKey(headers);
     expect(key).toBeNull();
   });
 
-  test("should return null when headers object is undefined", () => {
+  test("returns null if headers object is undefined", () => {
     const key = getAPIKey(undefined as any);
     expect(key).toBeNull();
   });

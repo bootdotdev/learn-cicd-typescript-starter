@@ -1,3 +1,10 @@
+# .github/workflows/ci.yml
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+
 jobs:
   tests:
     name: Tests
