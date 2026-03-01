@@ -1,4 +1,3 @@
-# .github/workflows/ci.yml
 name: ci
 
 on:
@@ -7,14 +6,12 @@ on:
 
 jobs:
   tests:
-    name: Tests
     runs-on: ubuntu-latest
-
     steps:
-      - name: Check out code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
