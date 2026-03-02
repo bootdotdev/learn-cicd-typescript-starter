@@ -1,24 +1,35 @@
-// src/tests/auth.test.ts
 import { describe, expect, test } from "vitest";
 import { getAPIKey } from "../api/auth";
 
 describe("getAPIKey", () => {
-
-  test("returns the API key if authorization header exists", () => {
-    const headers = { authorization: "Bearer 12345abcde" };
-    const key = getAPIKey(headers);
-    expect(key).toBe("12345abcde");
-  });
-
-  test("returns null if authorization header is missing", () => {
+  test("should return null if the authorization header is not present", () => {
     const headers = {};
-    const key = getAPIKey(headers);
-    expect(key).toBeNull();
+    const result = getAPIKey(headers);
+    expect(result).toBeNull();
   });
 
-  test("returns null if headers object is undefined", () => {
-    const key = getAPIKey(undefined as any);
-    expect(key).toBeNull();
+  test("should return null if the authorization header does not start with 'ApiKey'", () => {
+    const headers = {
+      authorization: "Bearer my-token",
+    };
+    const result = getAPIKey(headers);
+    expect(result).toBeNull();
   });
 
+  test("should return null if the authorization header is malformed", () => {
+    const headers = {
+      authorization: "ApiKey",
+    };
+    const result = getAPIKey(headers);
+    expect(result).toBeNull();
+  });
+
+  test("should return the API key if the authorization header is valid", () => {
+    const headers = {
+      authorization: "ApiKey valid-api-key",
+    };
+    const result = getAPIKey(headers);
+    expect(result).toBe("valid-api-key");
+  });
 });
+
