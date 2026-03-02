@@ -21,6 +21,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run unit tests
+      - name: Run tests with coverage
+        # **هنا أمر صريح مع --coverage**
         run: npm run test -- --coverage
-
