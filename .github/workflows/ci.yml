@@ -36,5 +36,8 @@ jobs:
               with:
                 node-version: 22
             
+            - name: Install dependencies
+              run: npm ci
+            
             - name: Run formatting
               run: npm run format:check
