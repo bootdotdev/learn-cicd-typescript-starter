@@ -20,7 +20,6 @@ export function respondWithJSON(res: Response, code: number, payload: unknown) {
   res.setHeader("Content-Type", "application/json");
   const body = JSON.stringify(payload);
   res.status(code).send(body);
-  res.end();
 }
 
 function errStringFromError(err: unknown): string {
@@ -35,3 +34,4 @@ function errStringFromError(err: unknown): string {
   }
   return "An unknown error occurred";
 }
+
