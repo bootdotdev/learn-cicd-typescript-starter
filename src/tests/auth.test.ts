@@ -20,7 +20,7 @@ describe("getAPIKey", () => {
 
   test("returns the API key when header is well-formed", () => {
     expect(getAPIKey({ authorization: "ApiKey my-secret-key" })).toBe(
-      "my-secret-key"
+      "my-secret-key",
     );
   });
 
