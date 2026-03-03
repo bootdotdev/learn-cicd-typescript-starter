@@ -24,4 +24,3 @@ export const config: Config = {
     url: process.env.DATABASE_URL,
   },
 };
-

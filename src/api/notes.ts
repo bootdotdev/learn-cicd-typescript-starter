@@ -36,4 +36,3 @@ export async function handlerNotesCreate(
     respondWithError(res, 500, "Couldn't create note", err);
   }
 }
-

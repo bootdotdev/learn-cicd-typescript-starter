@@ -40,4 +40,3 @@ function generateRandomSHA256Hash(): string {
     .update(crypto.pseudoRandomBytes(32))
     .digest("hex");
 }
-
