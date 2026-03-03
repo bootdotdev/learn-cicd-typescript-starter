@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",
+    "@vitest/coverage-v8": "^4.0.18",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.36.2",
