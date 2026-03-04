@@ -5,11 +5,10 @@ on:
     branches: [main]
 jobs:
   
-  tests:
-    name: Deploy
-    runs-on: ubuntu-latest
+    Deploy:
+      runs-on: ubuntu-latest
 
-    steps:
+      steps:
       - name: Check out code
         uses: actions/checkout@v4
 
@@ -21,5 +20,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name : Run test
+      - name : Build App
         run: npm run build
