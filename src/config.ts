@@ -13,8 +13,6 @@ type Config = {
   api: APIConfig;
 };
 
-
-
 export const config: Config = {
   api: {
     port: process.env.PORT,
