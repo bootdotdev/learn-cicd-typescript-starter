@@ -40,7 +40,6 @@ if (db) {
   v1Router.post("/notes", middlewareAuth(handlerNotesCreate));
 }
 
-
 v1Router.get("/healthz", handlerReadiness);
 
 app.use("/v1", v1Router);
