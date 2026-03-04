@@ -27,8 +27,11 @@ jobs:
         uses: google-github-actions/setup-gcloud@v3
         with:
           project_id: notely-489209
-          service_account_key: ${{ secrets.GCP_CREDENTIALS }}
-          export_default_credentials: true
+
+      - name: Authenticate with GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
       - name: Verify gcloud authentication
         run: gcloud auth list
