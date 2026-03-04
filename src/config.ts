@@ -1,11 +1,5 @@
 import dotenv from "dotenv";
 dotenv.config();
-
-type Config = {
-  db: DBConfig;
-  api: APIConfig;
-};
-
 type APIConfig = {
   port: string | undefined;
   filepathRoot: string;
@@ -14,6 +8,12 @@ type APIConfig = {
 type DBConfig = {
   url: string | undefined;
 };
+type Config = {
+  db: DBConfig;
+  api: APIConfig;
+};
+
+
 
 export const config: Config = {
   api: {

@@ -12,7 +12,8 @@
     "dev": "npx tsc && node dist/main.js",
     "test": "vitest --run",
     "format:write": "prettier --write \"src/**/*.{js,ts,json,css,md}\"",
-    "format:check": "prettier --check \"src/**/*.{js,ts,json,css,md}\""
+    "format:check": "prettier --check \"src/**/*.{js,ts,json,css,md}\"",
+    "lint": "eslint ."
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
