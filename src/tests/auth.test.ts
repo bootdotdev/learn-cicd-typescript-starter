@@ -4,7 +4,7 @@ import { getAPIKey } from "../api/auth";
 describe("getAPIKey", () => {
   test("returns API key if authorization header exists", () => {
     const headers = {
-      authorization: "ApiKey 123abc"
+      authorization: "ApiKey 123abc",
     };
 
     const result = getAPIKey(headers as any);
