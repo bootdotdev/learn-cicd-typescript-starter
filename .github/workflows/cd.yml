@@ -32,8 +32,12 @@ jobs:
 
       - name: Verify gcloud authentication
         run: gcloud auth list
+
       - name: Build and push Docker image
         run: |
-          IMAGE_NAME=us-central1-docker.pkg.dev/notely-489209/notely-ar-repo/notely:v1
-          echo "Building Docker image $IMAGE_NAME"
-          gcloud builds submit --tag $IMAGE_NAME .
+          echo "${{ secrets.GCP_CREDENTIALS }}" > sa-key.json
+
+          gcloud auth activate-service-account --key-file=sa-key.json
+
+          gcloud config set project notely-489209
+          gcloud builds submit --tag us-central1-docker.pkg.dev/notely-489209/notely-ar-repo/notely:v1 .
