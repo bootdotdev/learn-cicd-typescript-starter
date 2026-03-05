@@ -1,4 +1,4 @@
-import express from "express";
+	import express from "express";
 import cors from "cors";
 import path from "path";
 import { config } from "./config.js";
@@ -47,3 +47,9 @@ app.use("/v1", v1Router);
 app.listen(config.api.port, () => {
   console.log(`Server is running on port: ${config.api.port}`);
 });
+
+
+function unused() {
+  // this function does nothing
+  // and is called nowhere
+}
