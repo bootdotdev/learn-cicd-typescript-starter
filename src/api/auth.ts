@@ -1,4 +1,6 @@
 import type { IncomingHttpHeaders } from "http";
-export function getAPIKey(headers: IncomingHttpHeaders | undefined): string {
-  return null as any; 
+
+    export function getAPIKey(headers: IncomingHttpHeaders | undefined): string {
+  const authHeader = headers?.authorization;
+  return typeof authHeader === "string" ? authHeader : "";
 }
