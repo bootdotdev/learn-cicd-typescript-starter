@@ -1,4 +1,4 @@
-import express from "express";
+	import express from "express";
 import cors from "cors";
 import path from "path";
 import { config } from "./config.js";
@@ -49,7 +49,7 @@ app.listen(config.api.port, () => {
 });
 
 
-function unused() {
-  // this function does nothing
-  // and is called nowhere
-}
+// function unused() {
+//   // this function does nothing
+//   // and is called nowhere
+// }
