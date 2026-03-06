@@ -1,24 +1,21 @@
 import js from "@eslint/js";
 import globals from "globals";
-import tseslintParser from "@typescript-eslint/parser";
-import tseslintPlugin from "@typescript-eslint/eslint-plugin";
+import tseslint from "typescript-eslint";
 
-export default [
-  {
-    files: ["**/*.{js,mjs,cjs,ts,mts,cts}"],
-    languageOptions: {
-      parser: tseslintParser,
-      globals: globals.node,
-    },
-    plugins: {
-      "@typescript-eslint": tseslintPlugin,
-    },
-    rules: {
-      ...js.configs.recommended.rules,
-      ...tseslintPlugin.configs.recommended.rules,
-    },
-  },
+export default tseslint.config(
   {
     ignores: ["dist/"],
   },
-];
+  {
+    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    files: ["**/*.{ts,mts,cts,js,mjs,cjs}"],
+    languageOptions: {
+      parser: tseslint.parser,
+      globals: globals.node,
+    },
+    rules: {
+      "@typescript-eslint/no-unused-vars": "error",
+    },
+  }
+);
+
