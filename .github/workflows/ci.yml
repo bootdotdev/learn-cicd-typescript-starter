@@ -1,0 +1,51 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      
+      - name: install dependencies
+        run: npm ci
+
+      - name: run tests
+        run: npm run test
+
+      - name: run coverage
+        run: npm run coverage
+    
+  style:
+    name: Style
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: install dependencies
+        run: npm ci
+
+      - name: Check formatting issues
+        run: npm run format:check
+
+      - name: fixing formatting 
+        run: npm run format:write      
+        
