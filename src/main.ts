@@ -10,15 +10,21 @@ import { handlerUsersCreate, handlerUsersGet } from "./api/users.js";
 
 
 
+
+
+
 const __dirname = path.resolve();
+
 
 if (!config.api.port) {
   console.error("PORT environment variable is not set");
   process.exit(1);
 }
 
+
 const app = express();
 app.use(express.json());
+
 
 app.use(
   cors({
@@ -31,9 +37,12 @@ app.use(
   }),
 );
 
+
 app.use("/", express.static(path.join(__dirname, config.api.filepathRoot)));
 
+
 const v1Router = express.Router();
+
 
 if (db) {
   v1Router.post("/users", handlerUsersCreate);
@@ -42,10 +51,19 @@ if (db) {
   v1Router.post("/notes", middlewareAuth(handlerNotesCreate));
 }
 
+
 v1Router.get("/healthz", handlerReadiness);
 
+
 app.use("/v1", v1Router);
+
 
 app.listen(config.api.port, () => {
   console.log(`Server is running on port: ${config.api.port}`);
 });
+
+
+
+function unused() {
+
+}
