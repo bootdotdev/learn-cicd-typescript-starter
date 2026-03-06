@@ -2,46 +2,46 @@ name: ci
 
 on:
   pull_request:
-    branches: [main]
+      branches: [main]
 
-jobs:
-  tests:
-    name: Tests
-    runs-on: ubuntu-latest
+      jobs:
+        tests:
+            name: Tests
+                runs-on: ubuntu-latest
 
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
+                    steps:
+                          - name: Check out code
+                                  uses: actions/checkout@v4
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
+                                        - name: Set up Node
+                                                uses: actions/setup-node@v4
+                                                        with:
+                                                                  node-version: 22
 
-      - name: Install dependencies
-        run: npm ci
+                                                                        - name: Install dependencies
+                                                                                run: npm ci
 
-      - name: Run tests with coverage
-        run: npm run test -- --coverage
-  
-  style:
-    name: Style
-    runs-on: ubuntu-latest
+                                                                                      - name: Run tests with coverage
+                                                                                              run: npm run test -- --coverage
 
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run formatting check
-        run: npm run format:check
-
-      - name: Run linting check
-        run: npm run lint
+                                                                                                style:
+                                                                                                    name: Style
+                                                                                                        runs-on: ubuntu-latest
+                                                                                                        
+                                                                                                            steps:
+                                                                                                                  - name: Check out code
+                                                                                                                          uses: actions/checkout@v4
+                                                                                                                          
+                                                                                                                                - name: Set up Node
+                                                                                                                                        uses: actions/setup-node@v4
+                                                                                                                                                with:
+                                                                                                                                                          node-version: 18
+                                                                                                                                                          
+                                                                                                                                                                - name: Install dependencies
+                                                                                                                                                                        run: npm ci
+                                                                                                                                                                        
+                                                                                                                                                                              - name: Run formatting check
+                                                                                                                                                                                      run: npm run format:check
+                                                                                                                                                                                      
+                                                                                                                                                                                            - name: Run linting check
+                                                                                                                                                                                            
