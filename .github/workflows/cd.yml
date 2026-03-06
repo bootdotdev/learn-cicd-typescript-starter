@@ -22,3 +22,21 @@ jobs:
 
       - name: Build application
         run: npm run build
+
+      # Authenticate with Google Cloud
+      - name: Setup GCloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: digital-well-489409-n4
+          service_account_key: ${{ secrets.GCP_CREDENTIALS }}
+          export_default_credentials: true
+
+      # Configure Docker to use Artifact Registry
+      - name: Configure Docker
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev
+
+      # Build and push Docker image
+      - name: Build and Push Image
+        run: |
+          gcloud builds submit \
+          --tag us-central1-docker.pkg.dev/digital-well-489409-n4/notely-ar-repo/notely:v1 .
