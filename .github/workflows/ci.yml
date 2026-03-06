@@ -27,11 +27,11 @@ jobs:
       - name: run coverage
         run: npm run coverage
     
-    style:
-      name: Style
-      runs-on: ubuntu-latest
+  style:
+    name: Style
+    runs-on: ubuntu-latest
 
-      steps:
+    steps:
       - name: Check formatting issues
         run: npm run format:check
       
