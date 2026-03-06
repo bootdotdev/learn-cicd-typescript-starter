@@ -6,7 +6,7 @@ on:
 
 jobs:
   tests:
-    name: Tests
+    name: Test
     runs-on: ubuntu-latest
 
     steps:
@@ -17,6 +17,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      
+      - name: install dependencies
+        run: npm ci
 
-      - name: Force Failure
-        run: node --version
+      - name: run tests
+        run: npm run test
+
+        
