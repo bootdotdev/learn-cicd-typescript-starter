@@ -45,5 +45,7 @@ jobs:
 
       - name: Check formatting issues
         run: npm run format:check
-      
+
+      - name: fixing formatting 
+        run: npm run format:write      
         
