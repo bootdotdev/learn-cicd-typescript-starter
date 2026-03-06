@@ -50,4 +50,4 @@ jobs:
         run: npm run format:write     
       
       - name: checking linting issues...
-        run:  npm run lint --max-warnings=0
+        run:  npm run lint -- --max-warnings=0
