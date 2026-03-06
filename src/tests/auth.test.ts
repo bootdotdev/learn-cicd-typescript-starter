@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { getAPIKey } from "../api/auth";
 
-const http ={
+const http = {
     "content-length": "123",
     "content-type": "text/plain",
     "connection": "keep-alive",
