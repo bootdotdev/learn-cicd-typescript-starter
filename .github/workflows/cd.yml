@@ -44,3 +44,12 @@ jobs:
         run: |
           gcloud builds submit \
           --tag us-central1-docker.pkg.dev/digital-well-489409-n4/notely-ar-repo/notely:v1 .
+      # Deploy to Cloud Run
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy notely \
+            --image us-central1-docker.pkg.dev/digital-well-489409-n4/notely-ar-repo/notely:v1 \
+            --region us-central1 \
+            --allow-unauthenticated \
+            --project digital-well-489409-n4 \
+            --max-instances=4
