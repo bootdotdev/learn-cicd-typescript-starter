@@ -10,21 +10,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out code
+      - name: Checking out code...
         uses: actions/checkout@v4
 
-      - name: Set up Node
+      - name: Setting up Node...
         uses: actions/setup-node@v4
         with:
           node-version: 22
       
-      - name: install dependencies
+      - name: installing dependencies..
         run: npm ci
 
-      - name: run tests
+      - name: running tests...
         run: npm run test
 
-      - name: run coverage
+      - name: running coverage...
         run: npm run coverage
     
   style:
@@ -32,20 +32,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out code
+      - name: Checking out code...
         uses: actions/checkout@v4
 
-      - name: Set up Node
+      - name: Setting up Node...
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: install dependencies
+      - name: installing dependencies...
         run: npm ci
 
-      - name: Check formatting issues
+      - name: Checking formatting issues...
         run: npm run format:check
 
-      - name: fixing formatting 
-        run: npm run format:write      
-        
+      - name: fixing formatting... 
+        run: npm run format:write     
+      
+      - name: checking linting issues...
+        run:  npm run lint
