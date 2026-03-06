@@ -53,9 +53,7 @@ jobs:
       - name: Run Migrations
         run: |
           echo "Running migrations..."
-          # Replace the following with your actual migration command
-          # For example, if you use Prisma:
-          npx prisma migrate deploy
+          npm run db:migrate
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }} 
      # Deploy to Cloud Run
