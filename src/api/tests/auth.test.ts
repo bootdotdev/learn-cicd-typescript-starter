@@ -11,7 +11,6 @@ describe("person", () => {
   });
 
   test("is active", () => {
-    //expect(person.isActive).toBeTruthy();
-    expect(1 + 1).toBe(3);
+    expect(person.isActive).toBeTruthy();
   });
 });
