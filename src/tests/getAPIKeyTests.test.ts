@@ -14,17 +14,18 @@ describe("getAPIKey", () => {
   });
 
   test("throws error if Authorization header missing", () => {
-    const headers = new Headers();
-
+ const headers:IncomingHttpHeaders = {
+  authorization: "",
+}
     const result = getAPIKey(headers);
 
     expect(result).toBeNull();
   });
 
   test("throws error if header format is invalid", () => {
-    const headers = new Headers({
-      Authorization: "InvalidHeader",
-    });
+    const headers:IncomingHttpHeaders = {
+      authorization: "InvalidHeader",
+    };
 
     const result = getAPIKey(headers);
 
