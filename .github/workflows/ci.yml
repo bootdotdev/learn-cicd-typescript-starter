@@ -23,6 +23,3 @@ jobs:
 
       - name: Run Unit Tests
         run: npm run test -- --coverage
-
-      - name: Force Failure
-        run: (node --version)
