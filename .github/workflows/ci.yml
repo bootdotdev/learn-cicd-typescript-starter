@@ -1,8 +1,8 @@
-name: CI
+name: ci
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   tests:
@@ -16,14 +16,14 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
 
       - name: Install dependencies
         run: npm ci
 
       - name: Run tests with coverage
         run: npm run test -- --coverage
-
+  
   style:
     name: Style
     runs-on: ubuntu-latest
