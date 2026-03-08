@@ -27,4 +27,4 @@ jobs:
           node-version: 23
       - run: npm ci
       - run: npm run format:check
-      - run: npm run lint
+- run: npm run lint -- --max-warnings=0
