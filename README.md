@@ -1,3 +1,6 @@
+![Build Status](https://github.com/Zainahusniabusamra/learn-cicd-typescript-starter/actions/workflows/ci.yml/badge.svg )
+![Build Status](https://github.com/Zainahusniabusamra/learn-cicd-typescript-starter/actions/workflows/FILENAME/badge.svg )
+![Build Status](https://github.com/Zainahusniabusamra/learn-cicd-typescript-starter/actions/workflows/FILENAME/badge.svg )
 ![Tests](https://github.com/Zainahusniabusamra/learn-cicd-typescript-starter/actions/workflows/ci.yml/badge.svg)
 # learn-cicd-typescript-starter (Notely)
 
