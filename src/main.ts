@@ -48,8 +48,4 @@ app.listen(config.api.port, () => {
   console.log(`Server is running on port: ${config.api.port}`);
 });
 
-// Add this to the bottom of the file
-function unused() {
-  // this function does nothing
-  // and is called nowhere
-}
+
