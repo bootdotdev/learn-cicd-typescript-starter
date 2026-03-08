@@ -6,6 +6,9 @@ import pluginSecurity from "eslint-plugin-security";
 
 export default defineConfig([
   {
+    ignores: ["dist/**"],
+  },
+  {
     files: ["**/*.{js,mjs,cjs,ts,mts,cts}"],
     plugins: { js },
     extends: ["js/recommended"],
