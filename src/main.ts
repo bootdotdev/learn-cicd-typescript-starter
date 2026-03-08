@@ -44,11 +44,6 @@ v1Router.get("/healthz", handlerReadiness);
 
 app.use("/v1", v1Router);
 
-function unused() {
-  // this function does nothing
-  // and is called nowhere
-}
-
 app.listen(config.api.port, () => {
   console.log(`Server is running on port: ${config.api.port}`);
 });
