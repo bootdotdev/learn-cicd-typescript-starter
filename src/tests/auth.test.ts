@@ -2,10 +2,9 @@ import { describe, expect, test } from "vitest";
 import { getAPIKey } from "../api/auth";
 
 describe("getAPIKey", () => {
-
   test("extracts API key from header", () => {
     const headers = {
-      authorization: "ApiKey test123"
+      authorization: "ApiKey test123",
     };
 
     const result = getAPIKey(headers);
@@ -20,5 +19,4 @@ describe("getAPIKey", () => {
 
     expect(result).toBeNull();
   });
-
 });
