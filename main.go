@@ -36,7 +36,7 @@ func handlePage(w http.ResponseWriter, r *http.Request) {
 	const page = `<html>
 <head></head>
 <body>
-	<p> Hi Docker, I pushed a new version. </p>
+	<p> Hi Docker, I pushed a new version to Notely. </p>
 </body>
 </html>
 `
