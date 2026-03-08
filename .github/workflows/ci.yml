@@ -26,3 +26,4 @@ jobs:
           node-version: 22
       - run: npm ci
       - run: npm run format:check
+      - run: npm run lint # New step for linting
