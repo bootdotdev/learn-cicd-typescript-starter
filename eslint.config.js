@@ -16,4 +16,7 @@ export default defineConfig([
   },
   tseslint.configs.recommended,
   pluginSecurity.configs.recommended,
+  {
+    ignores: ["dist", "node_modules"],
+  },
 ]);
