@@ -29,5 +29,4 @@ describe("getAPIKey", () => {
     };
     expect(getAPIKey(headers)).toBe("myapikey123456");
   });
-
 });
