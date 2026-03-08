@@ -30,10 +30,4 @@ describe("getAPIKey", () => {
     expect(getAPIKey(headers)).toBe("myapikey123456");
   });
 
-  test("break test returns null when format is valid", () => {
-    const headers: IncomingHttpHeaders = {
-      authorization: "ApiKey myapikey123456",
-    };
-    expect(getAPIKey(headers)).toBeNull();
-  });
 });
