@@ -1,6 +1,5 @@
 // src/api/auth.ts
 
-
 export function getAPIKey(req: any): string | null {
   const authHeader = req.headers?.authorization;
   if (!authHeader) return null;
