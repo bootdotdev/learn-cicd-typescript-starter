@@ -22,7 +22,7 @@ jobs:
         run: npm ci
         
       - name: Run test
-        run: npm run test 
+        run: npm run test -- --coverage 
 
       - name: Finish Successfully
         run: (exit 0)  
