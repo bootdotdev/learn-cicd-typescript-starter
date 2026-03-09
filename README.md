@@ -25,4 +25,4 @@ You do _not_ need to set up a database or any interactivity on the webpage yet. 
 
 SoumavaDas version of Boot.dev's Notely app.
 
-[![ci](https://github.com/Soumava-221B/learn-cicd-typescript-starter/actions/workflows/ci.yml/badge.svg)](https://github.com/Soumava-221B/learn-cicd-typescript-starter/actions/workflows/ci.yml)
+![code coverage badge](https://github.com/Soumava-221B/learn-cicd-starter/actions/workflows/ci.yml/badge.svg)
