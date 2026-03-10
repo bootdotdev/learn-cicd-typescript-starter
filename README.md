@@ -1,7 +1,5 @@
 # learn-cicd-typescript-starter (Notely)
 
-# Learn CI/CD TypeScript Starter
-
 ![CI Tests](https://github.com/muhammadqzih/learn-cicd-typescript-starter/actions/workflows/ci.yml/badge.svg)
 
 MuhammadQzih's version of Boot.dev's Notely app
