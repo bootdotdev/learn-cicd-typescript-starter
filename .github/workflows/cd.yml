@@ -1,0 +1,25 @@
+name: deplyment
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: check out code
+        uses: actions/checkout@v4
+      
+      - name: set up Node environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: install dependencies
+        run: npm ci
+      
+      - name: build project
+        run: npm run build
+        
+  
