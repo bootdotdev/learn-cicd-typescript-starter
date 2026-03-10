@@ -24,3 +24,21 @@ jobs:
 
       - name: test coverage
         run: npm run test -- --coverage
+
+  style:
+    name: Style
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Style check
+        run: npm run format:check
+    
