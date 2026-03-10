@@ -4,7 +4,7 @@ import { getAPIKey } from "../api/auth.js";
 describe("getAPIKey function", () => {
   test("should return a string", () => {
     const key = getAPIKey({ authorization: "ApiKey 12345" });
-    expect(typeof key).toBe("number");
+    expect(typeof key).toBe("string");
   });
 
   test("should not return an empty string", () => {
