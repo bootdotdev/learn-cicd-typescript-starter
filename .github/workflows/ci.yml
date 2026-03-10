@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out code
+      - name: Check out node version
         uses: actions/checkout@v4
 
       - name: Set up Node
@@ -19,4 +19,4 @@ jobs:
           node-version: 22
 
       - name: Force Failure
-        run: (exit 1)
+        run: node --version
