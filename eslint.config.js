@@ -9,8 +9,8 @@ export default defineConfig([
     plugins: { js },
     extends: ["js/recommended"],
     languageOptions: {
-      globals: globals.node
-    }
+      globals: globals.node,
+    },
   },
   tseslint.configs.recommended,
 ]);
