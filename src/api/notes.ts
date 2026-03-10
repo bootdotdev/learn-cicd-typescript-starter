@@ -10,7 +10,7 @@ export async function handlerNotesGet(req: Request, res: Response, user: User) {
     respondWithJSON(res, 200, posts);
   } catch (err) {
     respondWithError(res, 500, "Couldn't retrieve notes", err);
-  }
+
 }
 
 export async function handlerNotesCreate(
