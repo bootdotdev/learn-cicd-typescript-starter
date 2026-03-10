@@ -6,12 +6,12 @@ MuhammadQzih's version of Boot.dev's Notely app
 This repo contains the typescript starter code for the "Notely" application for the "Learn CICD" course on [Boot.dev](https://boot.dev).
 
 ## Local Development
+
 Create a `.env` file in the root of the project with the following contents:
 
 ```bash
 PORT="8080"
 ```
-
 
 Run the server:
 
