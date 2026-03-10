@@ -19,11 +19,15 @@ describe("getAPIKey", () => {
   });
 
   test("returns the API key when header is valid", () => {
-    expect(getAPIKey({ authorization: "ApiKey mySecretKey123" })).toBe("mySecretKey123");
+    expect(getAPIKey({ authorization: "ApiKey mySecretKey123" })).toBe(
+      "mySecretKey123",
+    );
   });
 
   test("returns the API key with a different valid key", () => {
-    expect(getAPIKey({ authorization: "ApiKey abc-def-ghi" })).toBe("abc-def-ghi");
+    expect(getAPIKey({ authorization: "ApiKey abc-def-ghi" })).toBe(
+      "abc-def-ghi",
+    );
   });
 
   test("returns null when scheme is lowercase apikey", () => {
