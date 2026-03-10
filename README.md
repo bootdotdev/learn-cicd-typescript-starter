@@ -1,5 +1,5 @@
 
-!["The badge for checking test result"](https://github.com/<OWNER>/<REPOSITORY>/actions/workflows/<WORKFLOW_FILE>/badge.svg)
+![The badge for checking test result](https://github.com/<OWNER>/<REPOSITORY>/actions/workflows/<WORKFLOW_FILE>/badge.svg)
 
 # learn-cicd-typescript-starter (Notely)
 
