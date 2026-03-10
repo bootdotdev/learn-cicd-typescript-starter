@@ -43,3 +43,6 @@ jobs:
 
       - name: Check for Formatting Issues
         run: npm run format:check
+      
+      - name: Check for Linting Issues
+        run: npm run lint
