@@ -12,5 +12,5 @@ export default defineConfig([
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
   },
   tseslint.configs.recommended,
-    pluginSecurity.configs.recommended,
+  pluginSecurity.configs.recommended,
 ]);
