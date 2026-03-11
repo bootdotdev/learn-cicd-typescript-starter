@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # للحصول على التاريخ الكامل
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -31,6 +33,8 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -43,5 +47,5 @@ jobs:
       - name: Check formatting
         run: npm run format:check
 
-      - name: Run linter
-        run: npm run lint
+      - name: Check linting
+        run: npm run lint -- --max-warnings=0
