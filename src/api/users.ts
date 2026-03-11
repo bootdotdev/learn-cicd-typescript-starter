@@ -5,6 +5,11 @@ import { respondWithError, respondWithJSON } from "./json.js";
 import { createUser, getUser } from "../db/queries/users.js";
 import { User } from "../db/schema.js";
 
+function generateRandomSHA256Hash(): string {
+  const buffer = crypto.randomBytes(32);
+  return buffer.toString("hex");
+}
+
 export async function handlerUsersCreate(req: Request, res: Response) {
   try {
     const { name } = req.body;
@@ -18,25 +23,14 @@ export async function handlerUsersCreate(req: Request, res: Response) {
       name,
       apiKey,
     });
+
     const user = await getUser(apiKey);
     if (user) {
       respondWithJSON(res, 201, user);
     } else {
-      respondWithError(res, 500, "Couldn't retrieve user");
+      respondWithError(res, 500, "Unable to retrieve created user");
     }
-  } catch (err) {
-    respondWithError(res, 500, "Couldn't create user", err);
+  } catch (error) {
+    respondWithError(res, 500, (error as Error).message);
   }
-}
-
-export async function handlerUsersGet(req: Request, res: Response, user: User) {
-  respondWithJSON(res, 200, user);
-}
-
-function generateRandomSHA256Hash(): string {
-  // should we be using crypto.randomBytes instead of crypto.pseudoRandomBytes?
-  return crypto
-    .createHash("sha256")
-    .update(crypto.pseudoRandomBytes(32))
-    .digest("hex");
 }
