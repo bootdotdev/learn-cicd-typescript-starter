@@ -9,6 +9,9 @@ jobs:
     name: Deploy
     runs-on: ubuntu-latest
 
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -23,3 +26,9 @@ jobs:
 
       - name: Build app
         run: npm run build
+
+      - name: Run database migrations
+        run: npx prisma migrate deploy
+
+      - name: Deploy app
+        run: echo "ضع أمر النشر هنا"
