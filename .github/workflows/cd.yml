@@ -2,7 +2,7 @@ name: Continuous Deployment
 
 on:
   push:
-    branches: [main]
+    branches: ["*"]
 
 jobs:
   Deploy:
@@ -28,7 +28,7 @@ jobs:
         run: npm run build
 
       - name: Run database migrations
-        run: npx prisma migrate deploy
+        run: npm run db:migrate
 
       - name: Deploy app
         run: echo "ضع أمر النشر هنا"
