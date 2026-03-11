@@ -1,7 +1,5 @@
-name: ci
-
-on:
-  pull_request:
+git add .github/workflows/ci.ymlname: ci git commit -m "add CI workflow" on:
+git push origin addtests  pull_request:
     branches: [main]
 
 jobs:
