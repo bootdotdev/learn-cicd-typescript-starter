@@ -1,4 +1,3 @@
-
 export function getAPIKey(headers: any): string {
   const auth = headers.authorization;
 
