@@ -1,4 +1,3 @@
-import { IncomingHttpHeaders } from "http";
 
 export function getAPIKey(headers: any): string {
   const auth = headers.authorization;
