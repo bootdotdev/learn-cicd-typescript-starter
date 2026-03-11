@@ -14,4 +14,3 @@ describe("person", () => {
     expect(person.isActive).toBeTruthy();
   });
 });
-expect(1).toBe(2)
