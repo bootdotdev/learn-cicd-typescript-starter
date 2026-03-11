@@ -18,6 +18,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/cors": "^2.8.17",
+    "@types/eslint-plugin-security": "^3.0.1",
     "@types/express": "^5.0.0",
     "@types/node": "^22.19.15",
     "@typescript-eslint/eslint-plugin": "^8.57.0",
@@ -26,6 +27,7 @@
     "drizzle-kit": "^0.28.1",
     "eslint": "^10.0.3",
     "eslint-define-config": "^2.1.0",
+    "eslint-plugin-security": "^4.0.0",
     "globals": "^15.15.0",
     "jiti": "^2.6.1",
     "prettier": "3.8.1",
