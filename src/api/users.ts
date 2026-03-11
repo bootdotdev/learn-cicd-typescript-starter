@@ -5,11 +5,6 @@ import { respondWithError, respondWithJSON } from "./json.js";
 import { createUser, getUser } from "../db/queries/users.js";
 import { User } from "../db/schema.js";
 
-function generateRandomSHA256Hash(): string {
-  const buffer = crypto.randomBytes(32);
-  return buffer.toString("hex");
-}
-
 export async function handlerUsersCreate(req: Request, res: Response) {
   try {
     const { name } = req.body;
@@ -28,9 +23,20 @@ export async function handlerUsersCreate(req: Request, res: Response) {
     if (user) {
       respondWithJSON(res, 201, user);
     } else {
-      respondWithError(res, 500, "Unable to retrieve created user");
+      respondWithError(res, 500, "Couldn't retrieve user");
     }
-  } catch (error) {
-    respondWithError(res, 500, (error as Error).message);
+  } catch (err) {
+    respondWithError(res, 500, "Couldn't create user", err);
   }
+}
+
+export async function handlerUsersGet(req: Request, res: Response, user: User) {
+  respondWithJSON(res, 200, user);
+}
+
+function generateRandomSHA256Hash(): string {
+  return crypto
+    .createHash("sha256")
+    .update(crypto.randomBytes(32))
+    .digest("hex");
 }
