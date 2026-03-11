@@ -20,27 +20,28 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Run tests with coverage
-        run: npm run test -- --coverage 
+        run: npm run test -- --coverage
 
   style:
     name: Style
     runs-on: ubuntu-latest
 
     steps:
-    - name: Check out code
-      uses: actions/checkout@v4
+      - name: Check out code
+        uses: actions/checkout@v4
 
-    - name: Set up Node
-      uses: actions/setup-node@v4
-      with:
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
           node-version: 22
 
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: "Style"
-      run: "npm run format:check"
+      - name: Install dependencies
+        run: npm ci
 
-    
+      - name: format Check
+        run: "npm run format:check"
+
+      - name: check linting 
+        run: npm run lint -- --max-warnings=0
