@@ -1,4 +1,6 @@
-export function getAPIKey(headers: any): string {
+import type { IncomingHttpHeaders } from "http";
+
+export function getAPIKey(headers: IncomingHttpHeaders): string {
   const auth = headers.authorization;
 
   if (!auth) {
