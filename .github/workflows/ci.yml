@@ -1,5 +1,7 @@
-git add .github/workflows/ci.ymlname: ci git commit -m "add CI workflow" on:
-git push origin addtests  pull_request:
+name: ci
+
+on:
+  pull_request:
     branches: [main]
 
 jobs:
@@ -16,5 +18,5 @@ jobs:
         with:
           node-version: 22
 
-      - name: Force Failure
-        run: (exit 1)
+      - name: Check Node version
+        run: node --version
