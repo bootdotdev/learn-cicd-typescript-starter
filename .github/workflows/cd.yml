@@ -1,4 +1,5 @@
 name: cd
+
 on:
   push:
     branches: [main]
@@ -22,3 +23,18 @@ jobs:
 
       - name: Build App
         run: npm run build
+
+      - id: auth
+        name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Build and push Docker image
+        run: gcloud builds submit --tag us-central1-docker.pkg.dev/notely-489912/notely-ar-repo/notely:latest .
+
+      - name: Use gcloud CLI
+        run: gcloud info
