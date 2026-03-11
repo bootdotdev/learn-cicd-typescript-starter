@@ -35,5 +35,9 @@ jobs:
 
       - name: "build and push docker image to GCR"
         run: gcloud builds submit --tag us-central1-docker.pkg.dev/majestic-lodge-489822-u6/notely-ar-repo/notely:latest .
+      - name: "run migrations"
+        run: npm run db:migrate
       - name: "Deploy to Cloud Run"
         run: gcloud run deploy notely --image us-central1-docker.pkg.dev/majestic-lodge-489822-u6/notely-ar-repo/notely:latest --region us-central1 --allow-unauthenticated --project majestic-lodge-489822-u6 --max-instances=4
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}  
