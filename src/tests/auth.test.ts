@@ -8,7 +8,8 @@ describe("getAPIKey", () => {
       authorization: "ApiKey 12345",
     };
 
-    const key = getAPIKey(headers as IncomingHttpHeaders); expect(key).toBe("12345");
+    const key = getAPIKey(headers as IncomingHttpHeaders);
+    expect(key).toBe("12345");
   });
 
   test("throws error if header missing", () => {
