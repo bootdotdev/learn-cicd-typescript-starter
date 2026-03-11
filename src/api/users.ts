@@ -6,15 +6,14 @@ import { createUser, getUser } from "../db/queries/users.js";
 import { User } from "../db/schema.js";
 
 function generateRandomSHA256Hash(): string {
-
-  const buffer = crypto.randomBytes(32); 
+  const buffer = crypto.randomBytes(32);
   return buffer.toString("hex");
 }
 
 export async function handlerUsersCreate(req: Request, res: Response) {
   try {
     const { name } = req.body;
-    const apiKey = generateRandomSHA256Hash(); 
+    const apiKey = generateRandomSHA256Hash();
     const userId = uuidv4();
 
     await createUser({
