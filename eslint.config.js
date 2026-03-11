@@ -6,6 +6,9 @@ import pluginSecurity from "eslint-plugin-security";
 
 export default defineConfig([
   {
+    ignores: ["dist", "node_modules"],
+  },
+  {
     files: ["**/*.{js,mjs,cjs,ts,mts,cts}"],
     plugins: { js },
     extends: ["js/recommended"],
@@ -15,5 +18,6 @@ export default defineConfig([
     languageOptions: { globals: globals.node },
   },
   tseslint.configs.recommended,
-  pluginSecurity.configs.recommended,
+  pluginSecurity.configs.recommended,    
+
 ]);
