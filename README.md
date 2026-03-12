@@ -1,24 +1,85 @@
+
+[![CI Status](https://github.com/JanaDroubi/learn-cicd-typescript-starter/actions/workflows/ci.yml/badge.svg)](https://github.com/JanaDroubi/learn-cicd-typescript-starter/actions/workflows/ci.yml)
+
 # learn-cicd-typescript-starter (Notely)
 
-This repo contains the typescript starter code for the "Notely" application for the "Learn CICD" course on [Boot.dev](https://boot.dev).
+This repository contains the TypeScript starter code for the **Notely** application — part of the *Learn CI/CD* course on [Boot.dev](https://boot.dev).
+
+**Jana's version of Boot.dev's Notely app.**
+
+---
 
 ## Local Development
 
-Make sure you're on Node version 22+.
+> Make sure you're using **Node.js 22+**.
 
-Create a `.env` file in the root of the project with the following contents:
+### 1. Environment Setup
+
+Create a `.env` file in the project root with:
 
 ```bash
 PORT="8080"
-```
+````
 
-Run the server:
+### 2. Install Dependencies
 
 ```bash
 npm install
+```
+
+### 3. Run the Server
+
+```bash
 npm run dev
 ```
 
-_This starts the server in non-database mode._ It will serve a simple webpage at `http://localhost:8080`.
+* This starts the server in **non-database mode**.
+* The app will be available at: [http://localhost:8080](http://localhost:8080)
 
-You do _not_ need to set up a database or any interactivity on the webpage yet. Instructions for that will come later in the course!
+> No database setup or interactivity is needed yet — instructions will come later in the course.
+
+### 4. Run Tests (with Coverage)
+
+```bash
+npm run test
+# or with coverage report:
+npm run test -- --coverage
+```
+
+---
+
+## Useful Scripts
+
+| Script          | Description                      |
+| --------------- | -------------------------------- |
+| `npm run dev`   | Start the development server     |
+| `npm run test`  | Run all tests with Vitest        |
+| `npm run build` | Compile TypeScript to JavaScript |
+| `npm start`     | Run the compiled app             |
+
+---
+
+## CI / Continuous Integration
+
+This repository uses **GitHub Actions** for CI. Every pull request to `main` will automatically:
+
+* Install dependencies (`npm ci`)
+* Run all unit tests (`vitest`)
+* Generate a code coverage report
+
+Check the [Actions tab](https://github.com/JanaDroubi/learn-cicd-typescript-starter/actions) for workflow runs and logs.
+
+---
+
+## Project Goals
+
+This project is meant to help you learn and practice:
+
+* Git branching & pull requests
+* GitHub Actions workflows
+* Unit testing with Vitest
+* Code coverage reporting
+* Automating quality checks in CI
+
+Happy coding! 🚀
+
