@@ -1,4 +1,3 @@
-```yaml
 name: ci
 
 on:
@@ -48,4 +47,3 @@ jobs:
 
       - name: Run Linter
         run: npm run lint -- --max-warnings=0
-        
