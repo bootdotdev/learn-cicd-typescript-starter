@@ -19,5 +19,5 @@ jobs:
         with:
           node-version: 22
 
-      - name: Force Failure
-        run: (exit 1)
+      - name: FPrint Node Version
+        run: node --version
