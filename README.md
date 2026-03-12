@@ -1,13 +1,4 @@
-Here’s a clean, complete, and well-structured version of your **README.md** file for the Notely project (Boot.dev CI/CD course). It includes:
 
-- The CI badge at the top (clickable)
-- Your personal note
-- All the original local development instructions
-- Some nice formatting and sections for better readability
-
-Copy-paste this entire content into your `README.md` file:
-
-```markdown
 [![CI Status](https://github.com/JanaDroubi/learn-cicd-typescript-starter/actions/workflows/ci.yml/badge.svg)](https://github.com/JanaDroubi/learn-cicd-typescript-starter/actions/workflows/ci.yml)
 
 # learn-cicd-typescript-starter (Notely)
