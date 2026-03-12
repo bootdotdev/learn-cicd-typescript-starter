@@ -7,6 +7,9 @@ on:
 jobs:
   Deploy:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    
     steps:
       - uses: actions/checkout@v4
 
@@ -28,5 +31,8 @@ jobs:
         run: gcloud info
       - name: Build & push Docker image (Cloud Build)
         run: gcloud builds submit --tag us-central1-docker.pkg.dev/notely-489217/notely-ar-repo/notely:v1 .
+      - name: Run migrations
+        run: npm run migrate
       - name: Deploy to Cloud Run
         run: gcloud run deploy notely --image us-central1-docker.pkg.dev/notely-489217/notely-ar-repo/notely:v1 --region us-central1 --allow-unauthenticated --project notely-489217 --max-instances=4
+      
