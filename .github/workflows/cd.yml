@@ -40,6 +40,9 @@ jobs:
       - name: Run Migrations
         run: npm run db:migrate
 
+      - name: Remove DATABASE_URL secret binding
+        run: gcloud run services update notely --region us-central1 --remove-secrets=DATABASE_URL
+
       - name: Deploy to Cloud Run
         run: |
           printf 'DATABASE_URL: "%s"\n' "$DATABASE_URL" > env.yaml
@@ -49,5 +52,4 @@ jobs:
             --allow-unauthenticated \
             --project project-5201dc2c-ebbb-4808-911 \
             --max-instances=4 \
-            --remove-secrets=DATABASE_URL \
             --env-vars-file=env.yaml
