@@ -9,6 +9,9 @@ jobs:
     name: Deploy
     runs-on: ubuntu-latest
 
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -26,13 +29,16 @@ jobs:
           gcloud builds submit \
           --tag us-central1-docker.pkg.dev/project-5201dc2c-ebbb-4808-911/notely-ar-repo/notely:latest .
 
-      - name: Deploy to Cloud Run
-        run: gcloud run deploy notely --image us-central1-docker.pkg.dev/project-5201dc2c-ebbb-4808-911/notely-ar-repo/notely:latest --region us-central1 --allow-unauthenticated --project project-5201dc2c-ebbb-4808-911 --max-instances=4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Migrations
+        run: npm run db:migrate
 
       - name: Deploy to Cloud Run
-        run: |
-          gcloud run deploy notely \
-          --image us-central1-docker.pkg.dev/project-5201dc2c-ebbb-4808-911/notely-ar-repo/notely:latest \
-          --region us-central1 \
-          --platform managed \
-          --allow-unauthenticated
+        run: gcloud run deploy notely --image us-central1-docker.pkg.dev/project-5201dc2c-ebbb-4808-911/notely-ar-repo/notely:latest --region us-central1 --allow-unauthenticated --project project-5201dc2c-ebbb-4808-911 --max-instances=4
