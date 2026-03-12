@@ -83,4 +83,3 @@ This project is meant to help you learn and practice:
 
 Happy coding! 🚀
 
-```
