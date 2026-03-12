@@ -4,6 +4,8 @@
   "main": "dist/main.js",
   "type": "module",
   "scripts": {
+    "format:write": "prettier --write \"src/**/*.{js,ts,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{js,ts,json,css,md}\"",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
