@@ -1,21 +1,47 @@
-style:
-  name: Style
-  runs-on: ubuntu-latest
+name: ci
 
-  steps:
-    - name: Check out code
-      uses: actions/checkout@v4
+on:
+  pull_request:
+    branches: [main]
 
-    - name: Set up Node
-      uses: actions/setup-node@v4
-      with:
-        node-version: 22
+jobs:
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
 
-    - name: Install dependencies
-      run: npm ci
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
 
-    - name: Check formatting
-      run: npm run format:check
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
-    - name: Run lint
-      run: npm run lint
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test -- --coverage
+
+  style:
+    name: Style
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Run lint
+        run: npm run lint
