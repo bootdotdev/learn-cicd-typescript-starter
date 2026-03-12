@@ -20,4 +20,3 @@ jobs:
 
       - name: check node version
         run: node --version
-        run: (exit 0)
