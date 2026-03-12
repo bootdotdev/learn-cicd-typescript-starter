@@ -17,7 +17,7 @@ describe('getAPIKey', () => {
     };
     const result = getAPIKey(mockHeaders as any);
 
-    expect(result).toBe('THIS-WILL-FAIL-ON-PURPOSE');  // in the happy path test
+    expect(result).toBeNull();
   });
 
   test('returns null when no Authorization header is present', () => {
