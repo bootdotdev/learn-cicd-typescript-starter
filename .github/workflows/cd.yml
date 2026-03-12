@@ -30,4 +30,9 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
         with:
-          project_id: notely2-490019  
+          project_id: notely2-490019
+
+      - name: Build and push Docker image
+        run: |
+          gcloud builds submit --tag us-central1-docker.pkg.dev/notely2-490019/notely-ar-repo/notely .
+          
