@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, test } from "vitest";
 import { getAPIKey } from "../api/auth";
 
