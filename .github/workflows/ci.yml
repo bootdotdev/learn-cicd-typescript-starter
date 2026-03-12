@@ -48,25 +48,3 @@ jobs:
 
       - name: Run Linter
         run: npm run lint -- --max-warnings=0
-
-  build:
-    name: Build and Push Docker Image
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push'
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Build and Push Docker Image
-        run: |
-          gcloud builds submit \
-          --tag us-central1-docker.pkg.dev/project-5201dc2c-ebbb-4808-911/notely-ar-repo/notely:latest .

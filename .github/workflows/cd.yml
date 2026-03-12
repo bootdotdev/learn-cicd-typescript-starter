@@ -6,20 +6,30 @@ on:
 
 jobs:
   deploy:
-    name: Deploy
+    name: Deploy to Cloud Run
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
         with:
-          node-version: 22
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
 
-      - name: Build project
-        run: npm run build
+      - name: Build and Push Docker Image
+        run: |
+          gcloud builds submit \
+          --tag us-central1-docker.pkg.dev/project-5201dc2c-ebbb-4808-911/notely-ar-repo/notely:latest .
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy notely \
+          --image us-central1-docker.pkg.dev/project-5201dc2c-ebbb-4808-911/notely-ar-repo/notely:latest \
+          --region us-central1 \
+          --platform managed \
+          --allow-unauthenticated
