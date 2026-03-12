@@ -49,5 +49,5 @@ jobs:
             --allow-unauthenticated \
             --project project-5201dc2c-ebbb-4808-911 \
             --max-instances=4 \
-            --clear-secrets=DATABASE_URL \
+            --remove-secrets=DATABASE_URL \
             --env-vars-file=env.yaml
