@@ -41,4 +41,4 @@ jobs:
         run: npm run db:migrate
 
       - name: Deploy to Cloud Run
-        run: gcloud run deploy notely --image us-central1-docker.pkg.dev/project-5201dc2c-ebbb-4808-911/notely-ar-repo/notely:latest --region us-central1 --allow-unauthenticated --project project-5201dc2c-ebbb-4808-911 --max-instances=4
+        run: gcloud run deploy notely --image us-central1-docker.pkg.dev/project-5201dc2c-ebbb-4808-911/notely-ar-repo/notely:latest --region us-central1 --allow-unauthenticated --project project-5201dc2c-ebbb-4808-911 --max-instances=4 --set-env-vars=DATABASE_URL=${{ secrets.DATABASE_URL }}
