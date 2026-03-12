@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, expect, test } from "vitest";
-import { something } from "../api/auth.js";
-
+import { describe, test, expect } from "vitest";
+import { getAPIKey } from "../api/auth.js";
 describe("getAPIKey", () => {
   test("returns API key when header is valid", () => {
     const headers = {
