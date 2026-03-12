@@ -8,11 +8,7 @@ import { User } from "../db/schema.js";
 /**
  * Handler to get user info
  */
-export async function handlerUsersGet(
-  req: Request,
-  res: Response,
-  user: User,
-) {
+export async function handlerUsersGet(req: Request, res: Response, user: User) {
   try {
     respondWithJSON(res, 200, user);
   } catch (err) {
@@ -23,10 +19,7 @@ export async function handlerUsersGet(
 /**
  * Handler to create a new user
  */
-export async function handlerUsersCreate(
-  req: Request,
-  res: Response,
-) {
+export async function handlerUsersCreate(req: Request, res: Response) {
   try {
     const { email, name } = req.body;
 
