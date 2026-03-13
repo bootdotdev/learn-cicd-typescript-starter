@@ -4,7 +4,7 @@
   "main": "dist/main.js",
   "type": "module",
   "scripts": {
-    "test": "vitest --run",
+    "test": "vitest --run --coverage",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
