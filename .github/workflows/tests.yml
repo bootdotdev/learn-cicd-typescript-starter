@@ -26,11 +26,6 @@ jobs:
 
       # 4. Run tests with coverage (coverage handled in vitest.config.ts)
       - name: Run tests
-        run: npm run test
+        run: npm run test  -- --coverage
 
-      # 5. Upload coverage folder so CI/Boot.dev can read it
-      - name: Upload coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage
+     
