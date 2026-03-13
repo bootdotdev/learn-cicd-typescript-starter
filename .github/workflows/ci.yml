@@ -1,14 +1,14 @@
-name: ci
+name: CI
 
 on:
   pull_request:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   tests:
     name: Tests
     runs-on: ubuntu-latest
-
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -22,12 +22,11 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        run: npm run test -- --coverage
+        run: npm test -- --coverage
 
   style:
     name: Style
     runs-on: ubuntu-latest
-
     steps:
       - name: Check out code
         uses: actions/checkout@v4
