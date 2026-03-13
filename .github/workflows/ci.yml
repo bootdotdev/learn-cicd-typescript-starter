@@ -22,7 +22,7 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        run: npm run test --coverage
+        run: npm run test -- --coverage
   style:
     name: Style
     runs-on: ubuntu-latest
@@ -43,4 +43,4 @@ jobs:
         run: npm run format:check
 
       - name: Run lint
-        run: npm run lint
+        run: npm run lint -- --max-warnings=0
