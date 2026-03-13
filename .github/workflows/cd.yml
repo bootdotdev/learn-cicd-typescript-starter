@@ -33,6 +33,13 @@ jobs:
           project_id: notely2-490019
 
       - name: Build and push Docker image
+        run: gcloud builds submit --tag us-central1-docker.pkg.dev/notely2-490019/notely-ar-repo/notely .
+
+      - name: Deploy to Cloud Run
         run: |
-          gcloud builds submit --tag us-central1-docker.pkg.dev/notely2-490019/notely-ar-repo/notely .
-          
+              gcloud run deploy notely \
+              --image us-central1-docker.pkg.dev/notely2-490019/notely-ar-repo/notely:latest \
+              --region us-central1 \
+              --allow-unauthenticated \
+              --project notely2-490019 \
+              --max-instances=4
