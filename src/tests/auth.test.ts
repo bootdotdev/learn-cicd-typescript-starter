@@ -4,7 +4,7 @@ import { getAPIKey } from "../api/auth";
 describe("getAPIKey", () => {
   test("should return the API key from the Authorization header", () => {
     const headers = {
-      authorization: "ApiKey 123456789"
+      authorization: "ApiKey 123456789",
     };
     const result = getAPIKey(headers);
     expect(result).toBe("123456789");
