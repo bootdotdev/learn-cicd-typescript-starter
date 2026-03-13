@@ -6,7 +6,8 @@ export default defineConfig({
     coverage: {
       provider: 'v8', // uses @vitest/coverage-v8
       reporter: ['text', 'lcov'], // text = console, lcov = folder
-      reportsDirectory: 'coverage', // this folder will be created
+      reportsDirectory: 'coverage',
+      all: true, // this folder will be created
     },
   },
 })
