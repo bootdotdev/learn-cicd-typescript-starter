@@ -19,7 +19,7 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci || (npm install && git checkout package-lock.json)
 
       - name: Run tests
         run: npm run test
