@@ -1,4 +1,4 @@
-kname: cd
+name: cd
 
 on:
   push:
