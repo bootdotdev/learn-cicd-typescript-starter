@@ -23,3 +23,20 @@ jobs:
 
       - name: Run vitest unit tests
         run: npm run test
+
+  style:
+    name: Style
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run formating tests
+        run: npm run npm run format:check
