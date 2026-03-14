@@ -24,7 +24,7 @@ jobs:
       - name: Run tests
         run: npm run test
 
-style:
+  style:
     name: Style
     runs-on: ubuntu-latest
 
