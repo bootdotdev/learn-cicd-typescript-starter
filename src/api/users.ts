@@ -6,7 +6,6 @@ import { createUser, getUser } from "../db/queries/users.js";
 import { User } from "../db/schema.js";
 
 export async function handlerUsersCreate(req: Request, res: Response) {
-  
   try {
     const { name } = req.body;
     const apiKey = generateRandomSHA256Hash();
@@ -38,6 +37,6 @@ function generateRandomSHA256Hash(): string {
   // should we be using crypto.randomBytes instead of crypto.pseudoRandomBytes?
   return crypto
     .createHash("sha256")
-    .update(crypto.pseudoRandomBytes(32))
+    .update(crypto.randomBytes(32))
     .digest("hex");
 }
