@@ -21,3 +21,17 @@ jobs:
 
       - name: build
         run: npm run build
+
+      - id: "auth"
+        uses: "google-github-actions/auth@v2"
+        with:
+          credentials_json: "${{ secrets.GCP_CREDENTIALS }}"
+
+      - name: "Set up Cloud SDK"
+        uses: "google-github-actions/setup-gcloud@v3"
+
+      - name: "Use gcloud CLI"
+        run: "gcloud info"
+
+      - name: Build docker image
+        run: gcloud builds submit --tag us-central1-docker.pkg.dev/focus-champion-490121-f1/notely-ar-repo/notely:latest .
