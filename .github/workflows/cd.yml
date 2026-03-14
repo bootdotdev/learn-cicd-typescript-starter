@@ -1,0 +1,48 @@
+name: cd
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build app
+        run: npm run build
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: clear-arbor-490220-q3
+
+      - name: Build and Push Docker Image
+        run: |
+          gcloud builds submit --tag us-central1-docker.pkg.dev/clear-arbor-490220-q3/notely-ar-repo/notely:latest .
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy notely \
+            --image us-central1-docker.pkg.dev/clear-arbor-490220-q3/notely-ar-repo/notely:latest \
+            --region us-central1 \
+            --allow-unauthenticated \
+            --project clear-arbor-490220-q3 \
+            --max-instances=4
