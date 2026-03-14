@@ -15,3 +15,4 @@ describe("getAPIKey function with headers", () => {
     expect(getAPIKey(headers)).toBe("MY_SECRET_KEY");
   });
 });
+
