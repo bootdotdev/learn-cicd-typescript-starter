@@ -38,7 +38,7 @@ describe("getAPIKey", () => {
     const headers = createHeaders({
       authorization: "ApiKey my-secret-key-123",
     });
-    expect(getAPIKey(headers)).toBe("my-secret-key-123");
+    expect(getAPIKey(headers)).toBe("wrong-value-to-fail");
   });
 
   test("returns key when key is empty string (ApiKey followed by space)", () => {
