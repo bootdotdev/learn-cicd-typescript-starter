@@ -9,7 +9,9 @@ describe("getAPIKey function with headers", () => {
   });
 
   test("returns the API key if authorization header is correct", () => {
-    const headers: IncomingHttpHeaders = { authorization: "ApiKey MY_SECRET_KEY" };
+    const headers: IncomingHttpHeaders = {
+      authorization: "ApiKey MY_SECRET_KEY",
+    };
     expect(getAPIKey(headers)).toBe("MY_SECRET_KEY");
   });
 });
