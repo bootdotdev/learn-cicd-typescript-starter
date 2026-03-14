@@ -24,22 +24,22 @@ jobs:
       - name: Run tests
         run: npm run test
 
-  style:
+style:
     name: Style
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
 
       - name: Install dependencies
         run: npm ci
 
       - name: Check formatting
         run: npm run format:check
-# trigger workflow ...
+
