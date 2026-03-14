@@ -10,14 +10,10 @@
     "build": "npx tsc",
     "start": "node dist/main.js",
     "dev": "npx tsc && node dist/main.js",
-<<<<<<< HEAD
     "test": "vitest --run --coverage",
     "format:write": "prettier --write \"src/**/*.{js,ts,json,css,md}\"",
     "format:check": "prettier --check \"src/**/*.{js,ts,json,css,md}\""
-=======
-    "test": "vitest --run --coverage"
->>>>>>> e1c1c96cc8dad9dbc8a8ff34bd890f9230a05e2d
-  },
+},
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
