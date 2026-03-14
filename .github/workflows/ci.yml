@@ -49,7 +49,7 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
@@ -57,5 +57,7 @@ jobs:
           project_id: notely-490118
 
       - name: Build and push Docker image
-        run: gcloud builds submit --tag 
+        run: |
+          gcloud builds submit \
+            --tag 
 us-central1-docker.pkg.dev/notely-490118/notely-ar-repo/notely:latest .
