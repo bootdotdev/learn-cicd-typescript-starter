@@ -23,3 +23,17 @@ jobs:
 
       - name: Build app
         run: npm run build
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: clear-arbor-490220-q3
+
+      - name: Build and Push Docker Image
+        run: |
+          gcloud builds submit --tag us-central1-docker.pkg.dev/clear-arbor-490220-q3/notely-ar-repo/notely:latest .
