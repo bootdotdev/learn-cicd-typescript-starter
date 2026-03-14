@@ -15,6 +15,11 @@ if (!config.api.port) {
   process.exit(1);
 }
 
+function unused() {
+  // this function does nothing
+  // and is called nowhere
+}
+
 const app = express();
 app.use(express.json());
 
@@ -47,3 +52,4 @@ app.use("/v1", v1Router);
 app.listen(config.api.port, () => {
   console.log(`Server is running on port: ${config.api.port}`);
 });
+
