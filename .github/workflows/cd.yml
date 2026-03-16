@@ -27,8 +27,15 @@ jobs:
       - name: Build app
         run: npm run build
 
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: notely-490023
+          service_account_key: ${{ secrets.GCP_CREDENTIALS }}
+
       - name: Run database migrations
         run: npm run db:migrate
 
-      - name: Deploy app
-        run: echo "ضع أمر النشر هنا"
+      - name: Build and push Docker image
+        run: |
+          gcloud builds submit --tag us-central1-docker.pkg.dev/notely-490023/notely-ar-repo/notely:v1 .
