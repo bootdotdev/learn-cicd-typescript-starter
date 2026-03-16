@@ -30,5 +30,6 @@ jobs:
       - name: Run database migrations
         run: npm run db:migrate
 
-      - name: Deploy app
-        run: echo "ضع أمر النشر هنا"
+      # هذه الخطوة الجديدة بدل gcloud
+      - name: Build Docker image (skipped for Render)
+        run: echo "Using Render for automated builds instead of GCP"
