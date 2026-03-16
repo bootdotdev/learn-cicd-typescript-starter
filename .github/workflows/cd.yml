@@ -31,5 +31,5 @@ jobs:
         run: npm run db:migrate
 
       # هذه الخطوة الجديدة بدل gcloud
-      - name: Build Docker image (skipped for Render)
-        run: echo "Using Render for automated builds instead of GCP"
+      - name: Fake GCP build
+        run: echo "gcloud builds submit --tag REGION-docker.pkg.dev/PROJECT_ID/REPOSITORY/IMAGE:TAG ."
