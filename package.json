@@ -1,12 +1,14 @@
 {
   "name": "notely",
   "version": "1.0.0",
-  "main": "index.js",
   "scripts": {
-    "test": "vitest --run"
+    "test": "vitest --run",
+    "format:write": "prettier --write \"src/**/*.{js,ts,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{js,ts,json,css,md}\""
   },
   "devDependencies": {
+    "vitest": "^3.0.0",
     "@vitest/coverage-v8": "^3.2.4",
-    "vitest": "^3.0.0"
+    "prettier": "3.2.5"
   }
 }
