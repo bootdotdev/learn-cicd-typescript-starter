@@ -1,27 +1,25 @@
 name: ci
-
 on:
   push:
     branches: [main, addtests]
   pull_request:
-    branches: [main, addtests]
-
+    branches: [main]
 jobs:
   tests:
-    name: Tests
     runs-on: ubuntu-latest
-
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests with coverage
-        run: npm run test -- --coverage
+      - run: npm ci
+      - run: npm run test -- --coverage
+  style:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run format:check
