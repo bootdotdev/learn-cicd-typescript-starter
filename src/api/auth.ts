@@ -1,7 +1,7 @@
 export function getAPIKey(headers: Record<string, string>): string {
   const authHeader = headers["authorization"];
   if (!authHeader) {
-    throw new Error("Wrong error message");
+    throw new Error("No authorization header found");
   }
 
   const parts = authHeader.split(" ");
