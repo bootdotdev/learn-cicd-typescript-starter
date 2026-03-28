@@ -1,15 +1,13 @@
-import { IncomingHttpHeaders } from "http";
-
-export function getAPIKey(headers: IncomingHttpHeaders): string | null {
+export function getAPIKey(headers: Record<string, string>): string {
   const authHeader = headers["authorization"];
   if (!authHeader) {
-    return null;
+    throw new Error("No authorization header found");
   }
 
-  const splitAuth = authHeader.split(" ");
-  if (splitAuth.length < 2 || splitAuth[0] !== "ApiKey") {
-    return null;
+  const parts = authHeader.split(" ");
+  if (parts.length !== 2 || parts[0] !== "ApiKey") {
+    throw new Error("Malformed authorization header");
   }
 
-  return splitAuth[1];
+  return parts[1];
 }
