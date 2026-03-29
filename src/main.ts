@@ -49,4 +49,3 @@ app.listen(config.api.port, () => {
 });
 
 
-function unused() {}
