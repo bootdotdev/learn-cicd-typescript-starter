@@ -49,3 +49,4 @@ app.listen(config.api.port, () => {
 });
 
 function unused() {}
+function triggerError() { const x = 1; }
