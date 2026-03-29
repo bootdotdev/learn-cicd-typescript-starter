@@ -1,22 +1,35 @@
-name: ci
+name: Build and Push to Artifact Registry
 
 on:
-  pull_request:
-    branches: [main]
+  push:
+    branches:
+      - main
 
 jobs:
-  tests:
-    name: Tests
+  deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Check out code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '20'
 
-      - name: Log Node Version
-        run: node --version
+      - name: Install dependencies and build
+        run: |
+          npm install
+          npm run build
+
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: 'Build and Push Docker Image'
+        run: |
+          gcloud builds submit --tag us-central1-docker.pkg.dev/notely-491714/notely-ar-repo/notely:latest .
