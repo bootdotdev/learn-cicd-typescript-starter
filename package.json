@@ -1,0 +1,50 @@
+{
+  "name": "learn-cicd-typescript-starter",
+  "version": "1.0.0",
+  "main": "dist/main.js",
+  "type": "module",
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "build": "npx tsc",
+    "start": "node dist/main.js",
+    "dev": "npx tsc && node dist/main.js",
+    "test": "vitest --run",
+    "format:write": "prettier --write \"src/**/*.{js,ts,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{js,ts,json,css,md}\"",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/cors": "^2.8.17",
+    "@types/eslint-plugin-security": "^3.0.1",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.9.0",
+    "@vitest/coverage-v8": "^4.1.1",
+    "drizzle-kit": "^0.28.1",
+    "eslint": "^10.1.0",
+    "eslint-plugin-security": "^4.0.0",
+    "globals": "^15.15.0",
+    "prettier": "3.8.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.57.2",
+    "vitest": "^4.1.1"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.14.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.36.2",
+    "express": "^4.21.1",
+    "uuid": "^11.0.3"
+  },
+  "prettier": {
+    "printWidth": 80,
+    "useTabs": false,
+    "tabWidth": 2,
+    "semi": true,
+    "singleQuote": false
+  }
+}

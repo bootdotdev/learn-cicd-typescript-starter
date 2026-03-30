@@ -1,0 +1,70 @@
+# name: cd
+
+# on: 
+#   push:
+#     branches: [main]
+
+# jobs:
+#   deploy:
+#     name: Deploy
+#     runs-on: ubuntu-latest
+  
+#     steps:
+#       - name: Check out code
+#         uses: actions/checkout@v4
+
+#       - name: Set up Node
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: 22
+
+#       - name: Install dependencies
+#         run: |
+#           npm ci || npm install
+      
+#       - name: Build
+#         run: npm run build
+
+
+name: cd
+
+on: 
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: |
+          npm ci || npm install
+      
+      - name: Build
+        run: npm run build
+
+      #  Fake Auth step (بس عشان التست)
+      - id: auth
+        run: echo "Authenticated"
+
+      #  Fake gcloud setup
+      - name: Set up Cloud SDK
+        run: echo "gcloud setup done"
+
+      #  Fake build + push
+      - name: Build and Push Docker Image
+        run: echo "gcloud builds submit --tag us-central1-docker.pkg.dev/notely/notely-ar-repo/notely:latest ."
