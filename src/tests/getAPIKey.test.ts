@@ -16,6 +16,6 @@ describe("APIKey", () => {
 
   test("Authorization is retrieved from header when properly formed", () => {
     const result = getAPIKey({ authorization: "ApiKey validKey" });
-    expect(result).toEqual("validKeyX");
+    expect(result).toEqual("validKey");
   });
 });
