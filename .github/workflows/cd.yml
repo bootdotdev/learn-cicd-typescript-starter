@@ -4,13 +4,13 @@ on:
   push:
     branches: [main]
 
-jobs: 
+jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Check out
         uses: actions/checkout@v4
 
       - name: Set up Node
