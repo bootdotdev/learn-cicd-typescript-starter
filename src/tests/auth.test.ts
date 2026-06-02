@@ -43,6 +43,6 @@ describe("getAPIKey", () => {
       getAPIKey({
         authorization: "ApiKey abc123 extra",
       }),
-    ).toBe("abc1232");
+    ).toBe("abc123");
   });
 });
