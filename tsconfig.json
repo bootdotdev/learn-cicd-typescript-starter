@@ -8,7 +8,9 @@
     "strict": true,
     "moduleResolution": "nodenext",
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true
   },
   "include": ["./src/**/*.ts"],
   "exclude": ["node_modules"]
