@@ -1,4 +1,4 @@
-name: co
+name: cd
 
 on:
   push:
@@ -23,3 +23,14 @@ jobs:
       
       - name: Build
         run: npm run build
+
+      - name: Authenticate with GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Build and push Docker image to Artifact Registry
+        run: gcloud builds submit --tag us-central1-docker.pkg.dev/smartbabe-f0cfd/notely-ar-repo/dolinh199x/notely:latest .
