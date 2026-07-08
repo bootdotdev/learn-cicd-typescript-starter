@@ -11,7 +11,7 @@ describe("Test getApiKey function", ()=> {
         };
 
         const result = getAPIKey(header);
-        expect(result).toEqual("peepee2343456asdf");
+        expect(result).toEqual("2343456asdf");
     });
 
     test('Second header test', () => {
