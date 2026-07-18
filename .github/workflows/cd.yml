@@ -22,7 +22,15 @@ jobs:
       - name: Build project
         run: npm run build
 
-      - name: Deploy to server
-        run: |
-          # Add your deployment commands here
-          echo "Deploying to server..."
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/notely:latest
