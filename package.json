@@ -6,7 +6,7 @@
   "scripts": {
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "test":"vitest --run",
+    "test": "vitest --run",
     "db:studio": "drizzle-kit studio",
     "build": "npx tsc",
     "start": "node dist/main.js",
@@ -16,6 +16,7 @@
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/node": "^22.9.0",
+    "@vitest/coverage-v8": "^4.1.10",
     "drizzle-kit": "^0.28.1",
     "globals": "^15.12.0",
     "tsx": "^4.19.2",
