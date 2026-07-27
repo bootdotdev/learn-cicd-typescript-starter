@@ -2,7 +2,7 @@
 
 This repo contains the typescript starter code for the "Notely" application for the "Learn CICD" course on [Boot.dev](https://boot.dev).
 
-![Tests](https://github.com/Mohammed-Zrirake/learn-cicd-typescript/.github/workflows/ci.yml/testing-green-gear-and-processed-checkmark-17427.svg/)
+![Tests](https://github.com/Mohammed-Zrirake/learn-cicd-typescript-starter/.github/workflows/ci.yml/badge.svg/)
 
 ## Local Development
 Mohammed's version of Boot.dev's Notely app.
