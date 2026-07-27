@@ -5,6 +5,7 @@ This repo contains the typescript starter code for the "Notely" application for 
 ![Tests](https://github.com/Mohammed-Zrirake/learn-cicd-typescript-starter/actions/workflows/ci.yml/badge.svg)
 
 ## Local Development
+Mohammed's version of Boot.dev's Notely app.
 
 Author : Mohammed Zrirake 
 Changes Made on 27th july 
