@@ -1,4 +1,4 @@
-![ci stats](https://github.com/ankormoreankor/learn-cicd-typescript-starter/actions/workflows/ci/badge.svg)
+![ci stats](https://github.com/ankormoreankor/learn-cicd-typescript-starter/actions/workflows/ci.yml/badge.svg)
 
 # learn-cicd-typescript-starter (Notely)
 
