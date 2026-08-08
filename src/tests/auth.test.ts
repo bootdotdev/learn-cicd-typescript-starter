@@ -14,7 +14,9 @@ describe("getAPIKey", () => {
   });
 
   test("returns the API key if auth header is correctly formed", () => {
-    const headers: IncomingHttpHeaders = { authorization: "ApiKey my-super-secret-key" };
+    const headers: IncomingHttpHeaders = {
+      authorization: "ApiKey my-super-secret-key",
+    };
     expect(getAPIKey(headers)).toBe("my-super-secret-key");
   });
 });
