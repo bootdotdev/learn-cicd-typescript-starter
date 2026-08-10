@@ -12,7 +12,8 @@
     "dev": "npx tsc && node dist/main.js",
     "test": "vitest --run",
     "format:write": "prettier --write \"src/**/*.{js,ts,json,css,md}\"",
-    "format:check": "prettier --check \"src/**/*.{js,ts,json,css,md}\""
+    "format:check": "prettier --check \"src/**/*.{js,ts,json,css,md}\"",
+    "lint": "eslint src"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -22,7 +23,7 @@
     "@types/node": "^22.9.0",
     "@vitest/coverage-v8": "^4.1.10",
     "drizzle-kit": "^0.28.1",
-    "eslint": "^10.8.0",
+    "eslint": "^10.8.1",
     "eslint-plugin-security": "^4.0.1",
     "globals": "^15.15.0",
     "prettier": "3.9.6",
