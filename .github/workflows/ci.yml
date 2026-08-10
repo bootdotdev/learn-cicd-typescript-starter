@@ -24,6 +24,10 @@ jobs:
       - name: Run tests
         run: npm run test --coverage
 
+  style:
+    name: Style
+    runs-on: ubuntu-latest
+
     steps:
       - name: Check out code
         uses: actions/checkout@v6
