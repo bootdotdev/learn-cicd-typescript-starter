@@ -1,0 +1,25 @@
+name: Deploy
+
+on: 
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      
+      - name: Setup Node Environment
+        uses: actions/setup-node@v5
+        with:
+          node-version: 26
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build app
+        run: npm run build
