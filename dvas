@@ -1,0 +1,16 @@
+[33mcommit b5c2a024ba287cad3f6cc63a8f0c1bafd1b9be59[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32maddtests[m[33m, [m[1;31morigin/addtests[m[33m)[m
+Author: Khaled-Masri0 <masrikhaled2003@gmail.com>
+Date:   Tue Mar 10 21:18:48 2026 +0200
+
+    edited README
+
+[1mdiff --git a/README.md b/README.md[m
+[1mindex e58be39..7644acc 100644[m
+[1m--- a/README.md[m
+[1m+++ b/README.md[m
+[36m@@ -22,3 +22,4 @@[m [mnpm run dev[m
+ _This starts the server in non-database mode._ It will serve a simple webpage at `http://localhost:8080`.[m
+ [m
+ You do _not_ need to set up a database or any interactivity on the webpage yet. Instructions for that will come later in the course![m
+[32m+[m[32mKhaled's version of Boot.dev's Notely app.[m
+\ No newline at end of file[m
