@@ -1,0 +1,50 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test --coverage
+      
+  style:
+    name: Style
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Style checks > prettier package
+        run: npm run format:check
+
+      - name: Code quality checks > eslint
+        run: npm run lint
+
+      - name: Check linting
+        run: npm run lint -- --max-warnings=0
