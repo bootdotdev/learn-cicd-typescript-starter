@@ -18,5 +18,8 @@ jobs:
         with:
           node-version: 22
 
-      - name: Echo Node Version
-        run: node --version
+      - name: Install dependencies
+        run: npm ci
+        run: npm run test
+
+
