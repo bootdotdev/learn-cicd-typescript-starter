@@ -9,7 +9,7 @@ describe("getAPIKey", () => {
     expect(getAPIKey(headers)).toBeNull();
   });
 
-   test("returns null when the authorization header has no API key", () => {
+  test("returns null when the authorization header has no API key", () => {
     const headers: IncomingHttpHeaders = {
       authorization: "ApiKey",
     };
