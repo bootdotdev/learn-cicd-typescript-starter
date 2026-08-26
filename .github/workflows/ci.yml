@@ -43,8 +43,8 @@ jobs:
       - name: run formatting checks
         run: npm run format:check
 
-      - name: run linting checks
-        run: npm run lint
-
       - name: run formatting corrections
         run: npm run format:write
+
+      - name: run linting checks
+        run: npm run lint
