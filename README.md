@@ -1,4 +1,4 @@
-![Testing Status](https://github.com/athomeadmin/learn-cicd-typescript-starter/actions/workflows/ci.yml/badge.svg)
+[![ci](https://github.com/at-home-admin/learn-cicd-typescript-starter/actions/workflows/ci.yml/badge.svg?branch=addtests)](https://github.com/at-home-admin/learn-cicd-typescript-starter/actions/workflows/ci.yml)
 
 # learn-cicd-typescript-starter (Notely)
 
