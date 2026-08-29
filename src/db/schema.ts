@@ -28,3 +28,4 @@ export const notesTable = sqliteTable("notes", {
 
 export type Note = typeof notesTable.$inferSelect;
 export type NewNote = typeof notesTable.$inferInsert;
+
