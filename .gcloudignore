@@ -1,6 +1,5 @@
 node_modules/
-coverage/
+.git/
 dist/
-.env
 google-cloud-sdk/
 *.tar.gz
