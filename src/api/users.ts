@@ -1,13 +1,15 @@
 import { Request, Response } from "express";
 import crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
-import { respondWithError, respondWithJSON } from "./json.js";
-import { createUser, getUser } from "../db/queries/users.js";
-import { User } from "../db/schema.js";
+
+import { createUser, getUser } from "../db/users.js";
+import { respondWithJSON, respondWithError } from "./responses.js";
+import type { User } from "../db/schema.js";
 
 export async function handlerUsersCreate(req: Request, res: Response) {
   try {
     const { name } = req.body;
+
     const apiKey = generateRandomSHA256Hash();
     const userId = uuidv4();
 
@@ -18,7 +20,9 @@ export async function handlerUsersCreate(req: Request, res: Response) {
       name,
       apiKey,
     });
+
     const user = await getUser(apiKey);
+
     if (user) {
       respondWithJSON(res, 201, user);
     } else {
@@ -34,9 +38,8 @@ export async function handlerUsersGet(req: Request, res: Response, user: User) {
 }
 
 function generateRandomSHA256Hash(): string {
-  // should we be using crypto.randomBytes instead of crypto.pseudoRandomBytes?
   return crypto
     .createHash("sha256")
-    .update(crypto.pseudoRandomBytes(32))
+    .update(crypto.randomBytes(32)) // ✅ FIXED: secure randomness
     .digest("hex");
 }
