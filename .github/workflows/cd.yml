@@ -1,0 +1,42 @@
+name: Continuous Deployment
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  Deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # Step 4: Build the app
+      - name: Build the app
+        run: npm run build
+
+      # Step 5: Authenticate with GCP
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: notely-489123
+          service_account_key: ${{ secrets.GCP_CREDENTIALS }}
+          export_default_credentials: true
+
+      # Step 6: Build and push Docker image to Artifact Registry
+      - name: Build and push Docker image
+        run: |
+          gcloud builds submit \
+            --tag us-central1-docker.pkg.dev/notely-489123/notely-ar-repo/notely:latest .
