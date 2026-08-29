@@ -26,7 +26,7 @@ app.use(
     exposedHeaders: ["Link"],
     credentials: false,
     maxAge: 300,
-  }),
+  })
 );
 
 app.use("/", express.static(path.join(__dirname, config.api.filepathRoot)));
