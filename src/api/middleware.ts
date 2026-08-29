@@ -9,7 +9,14 @@ export function middlewareAuth(
 ) {
   return async (req: Request, res: Response) => {
     try {
-      const apiKey = getAPIKey(req.headers);
+      const webHeaders = new Headers();
+      for (const [key, value] of Object.entries(req.headers)) {
+        if (typeof value === "string") {
+          webHeaders.set(key, value);
+        }
+      }
+
+      const apiKey = getAPIKey(webHeaders);
       if (!apiKey) {
         respondWithError(res, 401, "Couldn't find api key");
         return;

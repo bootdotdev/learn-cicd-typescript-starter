@@ -1,15 +1,9 @@
-import { IncomingHttpHeaders } from "http";
+export function getAPIKey(headers: Headers): string | null {
+  const authHeader = headers.get("Authorization");
+  if (!authHeader) return null;
 
-export function getAPIKey(headers: IncomingHttpHeaders): string | null {
-  const authHeader = headers["authorization"];
-  if (!authHeader) {
-    return null;
-  }
+  const parts = authHeader.split(" ");
+  if (parts.length !== 2 || parts[0] !== "Bearer") return null;
 
-  const splitAuth = authHeader.split(" ");
-  if (splitAuth.length < 2 || splitAuth[0] !== "ApiKey") {
-    return null;
-  }
-
-  return splitAuth[1];
+  return parts[1];
 }
