@@ -1,5 +1,4 @@
 import { defineConfig } from "drizzle-kit";
-
 import { config } from "./src/config";
 
 export default defineConfig({
@@ -8,5 +7,6 @@ export default defineConfig({
   dialect: "turso",
   dbCredentials: {
     url: config.db.url || "",
+    authToken: process.env.TURSO_AUTH_TOKEN || "",
   },
 });
