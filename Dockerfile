@@ -4,7 +4,7 @@ WORKDIR /usr/src/app
 
 ADD . .
 
-RUN npm ci
+RUN NPM_CONFIG_LEGACY_PEER_DEPS=true npm ci
 
 RUN npm run build
 
