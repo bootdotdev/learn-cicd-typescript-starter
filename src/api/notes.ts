@@ -25,7 +25,7 @@ export async function handlerNotesCreate(
     await createNote({
       id: noteId,
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
       note,
       userId: user.id,
     });
