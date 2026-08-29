@@ -1,5 +1,8 @@
+*.tar.gz
+google-cloud-sdk/
+Installation directory*/
+venv/
+.venv/
 node_modules/
-coverage/
 dist/
 .env
-.vscode
