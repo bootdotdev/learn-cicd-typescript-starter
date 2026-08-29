@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
+    "ignoreDeprecations": "5.0", 
     "target": "esnext",
     "module": "nodenext",
     "rootDir": "./src",
