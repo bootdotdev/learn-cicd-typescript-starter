@@ -1,11 +1,23 @@
-FROM --platform=linux/amd64 node:22-slim
+# Base image
+FROM node:22-alpine
 
-WORKDIR /usr/src/app
+# Set working directory
+WORKDIR /app
 
-ADD . .
+# Copy package files
+COPY package*.json ./
 
+# Install dependencies
 RUN npm ci
 
+# Copy source code
+COPY . .
+
+# Build app
 RUN npm run build
 
-CMD ["node", "dist/main.js"]
+# Expose port
+EXPOSE 8080
+
+# Start server
+CMD ["npm", "run", "dev"]
