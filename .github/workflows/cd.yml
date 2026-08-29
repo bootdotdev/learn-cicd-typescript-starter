@@ -1,0 +1,39 @@
+name: cd
+
+on:
+  push:
+    branches: [main]
+
+jobs: 
+  Deployment: 
+    name: Deploy 
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build App
+        run: npm run build
+        
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v3'
+
+      - name: 'Use gcloud CLI'
+        run: 'gcloud info'
+
+      - name: 'Build Docker image and deploy to Gcloud artifacts'
+        run: 'gcloud builds submit --tag us-central1-docker.pkg.dev/project-5d610355-4296-4538-957/notely-ar-repo/notely:v1 .'
