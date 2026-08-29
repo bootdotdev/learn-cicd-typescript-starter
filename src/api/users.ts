@@ -3,7 +3,6 @@ import crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
 import { respondWithError, respondWithJSON } from "./json.js";
 import { createUser, getUser } from "../db/queries/users.js";
-import { User } from "../db/schema.js";
 
 export async function handlerUsersCreate(req: Request, res: Response) {
   try {
@@ -25,18 +24,31 @@ export async function handlerUsersCreate(req: Request, res: Response) {
       respondWithError(res, 500, "Couldn't retrieve user");
     }
   } catch (err) {
-    respondWithError(res, 500, "Couldn't create user", err);
+    respondWithError(res, 500, `Couldn't create user: ${err}`);
   }
 }
 
-export async function handlerUsersGet(req: Request, res: Response, user: User) {
-  respondWithJSON(res, 200, user);
+export async function handlerUsersGet(req: Request, res: Response) {
+  try {
+    const apiKey = req.headers.authorization?.split(" ")[1];
+    if (!apiKey) {
+      respondWithError(res, 401, "Unauthorized");
+      return;
+    }
+    const user = await getUser(apiKey);
+    if (user) {
+      respondWithJSON(res, 200, user);
+    } else {
+      respondWithError(res, 404, "User not found");
+    }
+  } catch (err) {
+    respondWithError(res, 500, `Couldn't get user: ${err}`);
+  }
 }
 
-function generateRandomSHA256Hash(): string {
-  // should we be using crypto.randomBytes instead of crypto.pseudoRandomBytes?
-  return crypto
-    .createHash("sha256")
-    .update(crypto.pseudoRandomBytes(32))
-    .digest("hex");
+// الدالة المعدلة أمنياً لضمان "عشوائية حقيقية" في مفاتيح التشفير
+function generateRandomSHA256Hash() {
+  // استبدلنا pseudoRandomBytes بـ randomBytes لزيادة القوة التشفيرية
+  const randomBuffer = crypto.randomBytes(32);
+  return crypto.createHash("sha256").update(randomBuffer).digest("hex");
 }
