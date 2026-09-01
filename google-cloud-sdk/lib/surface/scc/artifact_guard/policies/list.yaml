@@ -1,0 +1,28 @@
+- release_tracks: [ALPHA]
+  hints:
+    read_only: true
+  help_text:
+    brief: |
+      List artifact guard policies.
+    description: |
+      Returns the list of policies for a given organization.
+    examples: |
+      To list the policies for  "organizations/123/locations/global",
+        $ {command} organizations/123/locations/global
+      To list policies for `projects/456/locations/global`:
+        $ {command} projects/456/locations/global
+
+  request:
+    api_version: v1alpha
+    collection:
+    - artifactscanguard.organizations.locations.policies
+    - artifactscanguard.projects.locations.policies
+    method: list
+
+  arguments:
+    resource:
+      arg_name: parent
+      spec: !REF googlecloudsdk.command_lib.scc.resources:organization_or_project_location
+      help_text: |
+        The parent resource to list policies for. Format: organizations/{organization}/locations/{location} or projects/{project}/locations/{location}
+      is_positional: true

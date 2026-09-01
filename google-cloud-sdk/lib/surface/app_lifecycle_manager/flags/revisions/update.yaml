@@ -1,0 +1,59 @@
+- release_tracks: [ALPHA, BETA]
+  hints:
+    read_only: false
+  help_text:
+    brief: Update Flag Revision
+    description: |-
+      Update the metadata of a flag revision. This command modifies the revision's
+      labels and annotations without altering the underlying flag configuration.
+
+      Note that a flag revision serves as an immutable snapshot of a flag's
+      definition at a specific point in time. While the configuration (variants and
+      evaluation logic) cannot be modified once created, this command allows you to
+      add labels and annotations to the revision for categorization and tracking.
+    examples: |-
+      To update labels and annotations for a flag revision, run:
+
+          $ {command} my-revision --location=global --labels=env=prod --annotations=ticket=123
+  arguments:
+    params:
+    - help_text: |-
+        Flag Revision ID. Google Cloud resource name (full URI of the resource) following the standard naming
+        scheme:
+
+          "projects/{project}/locations/{location}/flagRevisions/{flag_revision_id}"
+      is_positional: true
+      request_id_field: flagRevisionId
+      resource_spec: !REF googlecloudsdk.command_lib.saas_runtime.resources:flag_revision
+      required: true
+
+    - arg_name: labels
+      api_field: flagRevision.labels
+      clearable: true
+      required: false
+      repeated: true
+      help_text: |-
+        The labels on the resource, which can be used for categorization.
+      spec:
+      - api_field: key
+      - api_field: value
+
+    - arg_name: annotations
+      api_field: flagRevision.annotations
+      clearable: true
+      required: false
+      repeated: true
+      help_text: |-
+        Annotations is an unstructured key-value map stored with a resource that
+        may be set by external tools to store and retrieve arbitrary metadata.
+        They are not queryable and should be preserved when modifying objects.
+      spec:
+      - api_field: key
+      - api_field: value
+
+  request:
+    api_version: v1beta1
+    collection:
+    - saasservicemgmt.projects.locations.flagRevisions
+  update:
+    read_modify_update: true

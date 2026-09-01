@@ -1,0 +1,193 @@
+# -*- coding: utf-8 -*- #
+# Copyright 2016 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Command for modifying the properties of a subnetwork."""
+
+
+from googlecloudsdk.api_lib.compute import base_classes
+from googlecloudsdk.api_lib.compute import subnets_utils
+from googlecloudsdk.api_lib.compute import utils as compute_api
+from googlecloudsdk.calliope import base
+from googlecloudsdk.command_lib.compute.networks.subnets import flags
+
+
+def _DetailedHelp():
+  return {
+      'brief':
+          'Updates properties of an existing Compute Engine subnetwork.',
+      'DESCRIPTION':
+          """\
+          *{command}* is used to update properties of an existing Compute Engine
+          subnetwork.
+      """,
+      'EXAMPLES':
+          """\
+        To enable external IPv6 addresses on the subnetwork example-subnet-1 in
+        network-1, run
+
+        $ {command} example-subnet-1 --stack-type=IPV4_IPV6 \
+--ipv6-access-type=EXTERNAL \
+--region=REGION
+      """
+  }
+
+
+@base.UniverseCompatible
+@base.ReleaseTracks(base.ReleaseTrack.GA, base.ReleaseTrack.PREVIEW)
+class Update(base.UpdateCommand):
+  """Updates properties of an existing Compute Engine subnetwork."""
+
+  _include_alpha_logging = False
+  _api_version = compute_api.COMPUTE_GA_API_VERSION
+  _update_purpose_to_private = True
+  _include_ipv6_secondary_ranges = False
+  _include_ipv6_network_tier = False
+  detailed_help = _DetailedHelp()
+
+  @classmethod
+  def Args(cls, parser):
+    """The command arguments handler.
+
+    Args:
+      parser: An argparse.ArgumentParser instance.
+    """
+    cls.SUBNETWORK_ARG = flags.SubnetworkArgument()
+    cls.SUBNETWORK_ARG.AddArgument(parser, operation_type='update')
+
+    flags.IpCollectionArgument().AddArgument(parser, operation_type='update')
+
+    flags.AddUpdateArgs(
+        parser,
+        cls._include_alpha_logging,
+        cls._api_version,
+        cls._update_purpose_to_private,
+        cls._include_ipv6_secondary_ranges,
+        cls._include_ipv6_network_tier,
+    )
+
+  def Run(self, args):
+    """Issues requests necessary to update Subnetworks."""
+    holder = base_classes.ComputeApiHolder(self.ReleaseTrack())
+    client = holder.client
+    subnet_ref = self.SUBNETWORK_ARG.ResolveAsResource(args, holder.resources)
+
+    aggregation_interval = args.logging_aggregation_interval
+    flow_sampling = args.logging_flow_sampling
+    metadata = args.logging_metadata
+    filter_expr = args.logging_filter_expr
+    metadata_fields = args.logging_metadata_fields
+
+    if self._include_alpha_logging:
+      if args.aggregation_interval is not None:
+        aggregation_interval = args.aggregation_interval
+      if args.flow_sampling is not None:
+        flow_sampling = args.flow_sampling
+      if args.metadata is not None:
+        metadata = args.metadata
+
+    set_role_active = None
+    drain_timeout_seconds = args.drain_timeout
+    if args.role is not None:
+      set_role_active = getattr(args, 'role', None) == 'ACTIVE'
+
+    set_new_purpose = None
+    if args.purpose is not None:
+      set_new_purpose = getattr(args, 'purpose', None)
+
+    private_ipv6_google_access_type = args.private_ipv6_google_access_type
+    allow_cidr_routes_overlap = args.allow_cidr_routes_overlap
+
+    stack_type = getattr(args, 'stack_type', None)
+    ipv6_access_type = getattr(args, 'ipv6_access_type', None)
+
+    reserved_internal_ranges = getattr(
+        args, 'add_secondary_ranges_with_reserved_internal_range', None)
+
+    external_ipv6_prefix = getattr(args, 'external_ipv6_prefix', None)
+    internal_ipv6_prefix = getattr(args, 'internal_ipv6_prefix', None)
+
+    ipv6_network_tier = None
+    if self._include_ipv6_network_tier:
+      ipv6_network_tier = getattr(args, 'ipv6_network_tier', None)
+
+    ip_collection = None
+    if args.ip_collection:
+      ip_collection = flags.IpCollectionArgument().ResolveAsResource(
+          args, holder.resources
+      ).SelfLink()
+
+    if self._include_ipv6_secondary_ranges:
+      add_ipv6_ranges = args.add_secondary_ipv6_range
+      if add_ipv6_ranges:
+        for r in add_ipv6_ranges:
+          if 'ipCollection' in r:
+            # Resolve the collection name to a full URL
+            r['ipCollection'] = holder.resources.Parse(
+                r['ipCollection'],
+                collection='compute.publicDelegatedPrefixes',
+                params={
+                    'project': subnet_ref.project,
+                    'region': subnet_ref.region,
+                }).SelfLink()
+      remove_ipv6_ranges = args.remove_secondary_ipv6_range
+    else:
+      add_ipv6_ranges = None
+      remove_ipv6_ranges = None
+
+    return subnets_utils.MakeSubnetworkUpdateRequest(
+        client,
+        subnet_ref,
+        enable_private_ip_google_access=args.enable_private_ip_google_access,
+        add_secondary_ranges=args.add_secondary_ranges,
+        add_secondary_ranges_with_reserved_internal_range=reserved_internal_ranges,
+        remove_secondary_ranges=args.remove_secondary_ranges,
+        add_secondary_ipv6_ranges=add_ipv6_ranges,
+        remove_secondary_ipv6_ranges=remove_ipv6_ranges,
+        enable_flow_logs=args.enable_flow_logs,
+        aggregation_interval=aggregation_interval,
+        flow_sampling=flow_sampling,
+        metadata=metadata,
+        filter_expr=filter_expr,
+        metadata_fields=metadata_fields,
+        set_role_active=set_role_active,
+        set_new_purpose=set_new_purpose,
+        drain_timeout_seconds=drain_timeout_seconds,
+        private_ipv6_google_access_type=private_ipv6_google_access_type,
+        allow_cidr_routes_overlap=allow_cidr_routes_overlap,
+        stack_type=stack_type,
+        ipv6_access_type=ipv6_access_type,
+        external_ipv6_prefix=external_ipv6_prefix,
+        internal_ipv6_prefix=internal_ipv6_prefix,
+        ip_collection=ip_collection,
+        ipv6_network_tier=ipv6_network_tier,
+    )
+
+
+@base.ReleaseTracks(base.ReleaseTrack.BETA)
+class UpdateBeta(Update):
+  """Updates properties of an existing Compute Engine subnetwork."""
+
+  _api_version = compute_api.COMPUTE_BETA_API_VERSION
+  _include_ipv6_secondary_ranges = True
+  _include_ipv6_network_tier = True
+
+
+@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
+class UpdateAlpha(UpdateBeta):
+  """Updates properties of an existing Compute Engine subnetwork."""
+
+  _include_alpha_logging = True
+  _api_version = compute_api.COMPUTE_ALPHA_API_VERSION
+  _update_purpose_to_private = True
+  _include_ipv6_secondary_ranges = True

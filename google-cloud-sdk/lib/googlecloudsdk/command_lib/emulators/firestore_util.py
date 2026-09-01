@@ -1,0 +1,146 @@
+# -*- coding: utf-8 -*- #
+# Copyright 2015 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Utility functions for gcloud firestore emulator."""
+
+
+import os
+from googlecloudsdk.calliope import exceptions
+from googlecloudsdk.command_lib.emulators import util
+from googlecloudsdk.core import execution_utils
+from googlecloudsdk.core import log
+from googlecloudsdk.core.util import platforms
+
+
+def ArgsForFirestoreEmulator(emulator_args):
+  """Constructs an argument list for calling the Firestore emulator.
+
+  Args:
+    emulator_args: args for the emulator.
+
+  Returns:
+    An argument list to execute the Firestore emulator.
+  """
+  current_os = platforms.OperatingSystem.Current()
+  if current_os is platforms.OperatingSystem.WINDOWS:
+    cmd = 'cloud_firestore_emulator.cmd'
+    exe = os.path.join(util.GetEmulatorRoot(CLOUD_FIRESTORE), cmd)
+    return execution_utils.ArgsForCMDTool(exe, *emulator_args)
+  else:
+    cmd = 'cloud_firestore_emulator'
+    exe = os.path.join(util.GetEmulatorRoot(CLOUD_FIRESTORE), cmd)
+    return execution_utils.ArgsForExecutableTool(exe, *emulator_args)
+
+
+FIRESTORE = 'firestore'
+CLOUD_FIRESTORE = 'cloud-firestore'
+FIRESTORE_TITLE = 'Google Cloud Firestore emulator'
+
+
+def StartFirestoreEmulator(args, log_file=None):
+  """Starts the firestore emulator with the given arguments.
+
+  Args:
+    args: Arguments passed to the start command.
+    log_file: optional file argument to reroute process's output.
+
+  Returns:
+    process, The handle of the child process running the datastore emulator.
+  """
+  start_args = ['start']
+  start_args.append(f'--host={args.host_port.host}')
+  start_args.append(f'--port={args.host_port.port}')
+  if args.rules:
+    start_args.append(f'--rules={args.rules}')
+  if args.use_firestore_in_datastore_mode:
+    start_args.append('--database-mode=datastore-mode')
+  else:
+    start_args.append(f'--database-mode={args.database_mode}')
+  # TODO(b/539597053): Update to --require-indexes and --index-file.
+  if args.require_indexes:
+    start_args.append(f'--require_indexes={args.require_indexes}')
+  if args.index_file:
+    start_args.append(f'--index_file={args.index_file}')
+  if args.import_data:
+    start_args.append(f'--import-data={args.import_data}')
+  if args.export_on_exit:
+    start_args.append(f'--export-on-exit={args.export_on_exit}')
+  if args.licenses:
+    start_args.append('--licenses')
+  if args.edition:
+    start_args.append(f'--database-edition={args.edition}')
+  exec_args = ArgsForFirestoreEmulator(start_args)
+
+  log.status.Print('Executing: {0}'.format(' '.join(exec_args)))
+  return util.Exec(exec_args, log_file=log_file)
+
+
+def ValidateStartArgs(args):
+  """Validates start arguments for Firestore emulator."""
+  require_indexes = getattr(args, 'require_indexes', False)
+  index_file = getattr(args, 'index_file', None)
+  is_datastore_mode = (
+      getattr(args, 'use_firestore_in_datastore_mode', False)
+      or getattr(args, 'database_mode', None)
+      in ('datastore-mode', 'datastore')
+  )
+  if (require_indexes or index_file) and not is_datastore_mode:
+    raise exceptions.InvalidArgumentException(
+        '--require-indexes, --index-file',
+        '--require-indexes and --index-file are only supported when running in'
+        ' Datastore Mode.',
+    )
+  if require_indexes and not index_file:
+    raise exceptions.RequiredArgumentException(
+        '--index-file',
+        '--index-file is required when --require-indexes is specified.',
+    )
+  if index_file and not require_indexes:
+    raise exceptions.RequiredArgumentException(
+        '--require-indexes',
+        '--require-indexes is required when --index-file is specified.',
+    )
+
+
+def GetHostPort():
+  return util.GetHostPort(FIRESTORE)
+
+
+class FirestoreEmulator(util.Emulator):
+  """Represents the ability to start and route firestore emulator."""
+
+  def Start(self, port):
+    args = util.AttrDict({
+        'host_port': {
+            'host': 'localhost',
+            'port': port,
+        }
+    })
+    return StartFirestoreEmulator(args, self._GetLogNo())
+
+  @property
+  def prefixes(self):
+    return ['google.firestore']
+
+  @property
+  def service_name(self):
+    return FIRESTORE
+
+  @property
+  def emulator_title(self):
+    return FIRESTORE_TITLE
+
+  @property
+  def emulator_component(self):
+    return 'cloud-firestore-emulator'

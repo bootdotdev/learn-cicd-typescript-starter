@@ -1,0 +1,412 @@
+# -*- coding: utf-8 -*- #
+# Copyright 2020 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Flags and helpers for the connection profiles related commands."""
+
+from googlecloudsdk.api_lib.database_migration import api_util
+from googlecloudsdk.calliope import arg_parsers
+from googlecloudsdk.calliope import base as calliope_base
+from googlecloudsdk.calliope import exceptions as calliope_exceptions
+
+
+def AddNoAsyncFlag(parser):
+  """Adds a --no-async flag to the given parser."""
+  help_text = (
+      'Waits for the operation in progress to complete before returning.'
+  )
+  parser.add_argument('--no-async', action='store_true', help=help_text)
+
+
+def AddDisplayNameFlag(parser):
+  """Adds a --display-name flag to the given parser."""
+  help_text = """\
+    A user-friendly name for the connection profile. The display name can
+    include letters, numbers, spaces, and hyphens, and must start with a letter.
+    """
+  parser.add_argument('--display-name', help=help_text)
+
+
+def AddDatabaseParamsFlags(
+    parser,
+    require_password=True,
+    require_host_port=True,
+    with_database_name=False,
+    supports_iam_auth=False,
+    database_help_text=None,
+    support_optional_host_port=False,
+    include_cloudsql=False,
+    include_alloydb=False,
+):
+  """Adds the database connectivity flags to the given parser."""
+  database_params_group = parser.add_group(required=False, mutex=False)
+  if supports_iam_auth:
+    authentication_group = database_params_group.add_group(
+        mutex=True, required=False, help='Authentication method.'
+    )
+    AddEnableIamAuthenticationFlag(authentication_group, for_create=True)
+    builtin_auth_group = authentication_group.add_group()
+    AddUsernameFlag(builtin_auth_group, required=True)
+    AddPasswordFlagGroup(builtin_auth_group, required=require_password)
+  else:
+    AddUsernameFlag(database_params_group, required=True)
+    AddPasswordFlagGroup(database_params_group, required=require_password)
+  AddHostFlag(
+      database_params_group,
+      required=require_host_port,
+      support_optional_host_port=support_optional_host_port,
+      include_alloydb=include_alloydb,
+  )
+  AddPortFlag(
+      database_params_group,
+      required=require_host_port,
+      support_optional_host_port=support_optional_host_port,
+  )
+  if include_cloudsql:
+    AddCloudSQLInstanceFlag(database_params_group)
+  if include_alloydb:
+    AddAlloydbClusterFlag(database_params_group)
+  if with_database_name:
+    AddDatabaseFlag(
+        database_params_group, required=False, help_text=database_help_text
+    )
+
+
+def AddDatabaseFlag(parser, required=False, help_text=None):
+  """Adds a --database flag to the given parser."""
+  if help_text is None:
+    help_text = """\
+      The name of the specific database within the host.
+    """
+  parser.add_argument('--database', help=help_text, required=required)
+
+
+def AddUsernameFlag(parser, required=False, help_text=None):
+  """Adds a --username flag to the given parser."""
+  if not help_text:
+    help_text = """\
+        Username that Database Migration Service uses to connect to
+        the database. Database Migration Service encrypts the value when storing
+        it.
+    """
+  parser.add_argument('--username', help=help_text, required=required)
+
+
+def AddPasswordFlagGroup(parser, required=False):
+  """Adds --password and --prompt-for-password flags to the given parser."""
+
+  password_group = parser.add_group(required=required, mutex=True)
+  password_group.add_argument(
+      '--password',
+      help="""\
+          Password for the user that Database Migration Service uses to
+          connect to the database. Database Migration Service encrypts
+          the value when storing it, and the field is not returned on request.
+          """,
+  )
+  password_group.add_argument(
+      '--prompt-for-password',
+      action='store_true',
+      help='Prompt for the password used to connect to the database.',
+  )
+
+
+def AddHostFlag(
+    parser,
+    required=False,
+    support_optional_host_port=False,
+    include_alloydb=False,
+):
+  """Adds --host flag to the given parser."""
+  help_text = 'IP or hostname of the database.'
+  if support_optional_host_port:
+    help_text += """
+
+    For PostgreSQL destination profiles with Cloud SQL or AlloyDB, this flag is
+    optional if the instance or cluster is provided.
+    """
+
+  help_text += """
+
+    When `--psc-service-attachment` is also specified, this field value
+    should be:
+
+    1. For Cloud SQL PSC enabled instance - the dns_name field
+       (e.g <uid>.<region>.sql.goog.).
+    2. For Cloud SQL PSA instance (vpc peering) - the private ip of the
+       instance.
+"""
+  if include_alloydb:
+    help_text += """
+    3. For AlloyDB PSC enabled cluster - the dns_name field of the primary
+       instance (e.g <uid>.<region>.alloydb-psc.goog.).
+
+    4. For AlloyDB PSA cluster - the private ip of the primary instance.
+"""
+  parser.add_argument('--host', help=help_text, required=required)
+
+
+def AddPortFlag(parser, required=False, support_optional_host_port=False):
+  """Adds --port flag to the given parser."""
+  help_text = 'Network port of the database.'
+  if support_optional_host_port:
+    help_text += """
+
+    For PostgreSQL destination profiles with Cloud SQL or AlloyDB, this flag is
+    optional if the instance or cluster is provided.
+    """
+  parser.add_argument('--port', help=help_text, required=required, type=int)
+
+
+def AddDbmPortFlag(parser):
+  """Adds --dbm-port flag to the given parser."""
+  help_text = """\
+    The Database Mirroring (DBM) port.
+  """
+  parser.add_argument(
+      '--dbm-port', help=help_text, required=False, type=int, hidden=True
+  )
+
+
+def AddSslConfigGroup(parser, release_track):
+  """Adds ssl server only & server client config group to the given parser."""
+  ssl_config = parser.add_group()
+  client_cert = ssl_config.add_group()
+  if release_track == calliope_base.ReleaseTrack.GA:
+    AddSslTypeFlag(ssl_config, hidden=False, choices=None)
+  AddCaCertificateFlag(ssl_config, False)
+  AddPrivateKeyFlag(client_cert, required=False)
+
+  if api_util.GetApiVersion(release_track) == 'v1alpha2':
+    AddCertificateFlag(client_cert, required=False)
+  else:
+    AddClientCertificateFlag(client_cert, required=False)
+
+
+def AddSslServerOnlyConfigGroup(parser):
+  """Adds ssl server only config group to the given parser."""
+  ssl_config = parser.add_group()
+  AddCaCertificateFlag(ssl_config, True)
+
+
+def AddSslServerOnlyOrRequiredConfigGroup(parser):
+  """Adds ssl server only & required config group to the given parser."""
+  ssl_config = parser.add_group()
+  AddSslTypeFlag(
+      ssl_config, hidden=False, choices=['SERVER_ONLY', 'REQUIRED', 'NONE']
+  )
+  AddCaCertificateFlag(ssl_config)
+
+
+def AddSslFlags(parser):
+  """Adds a --ssl-flags flag to the given parser."""
+  help_text = """\
+    Comma-separated list of SSL flags used for establishing SSL connection to
+    the database. Use an equals sign to separate the flag name and value.
+    Example:
+    `--ssl-flags ssl_mode=enable,server_certificate_hostname=server.com`.
+  """
+  parser.add_argument(
+      '--ssl-flags',
+      type=arg_parsers.ArgDict(),
+      metavar='FLAG=VALUE',
+      help=help_text,
+  )
+
+
+def AddSslTypeFlag(parser, hidden=False, choices=None):
+  """Adds --ssl-type flag to the given parser."""
+  help_text = """\
+    The type of SSL configuration.
+  """
+  if not choices:
+    choices = ['SERVER_ONLY', 'SERVER_CLIENT', 'REQUIRED', 'NONE']
+  parser.add_argument(
+      '--ssl-type',
+      help=help_text,
+      choices=choices,
+      hidden=hidden,
+  )
+
+
+def AddCaCertificateFlag(parser, required=False):
+  """Adds --ca-certificate flag to the given parser."""
+  help_text = """\
+    x509 PEM-encoded certificate of the CA that signed the database
+    server's certificate. The value for this flag needs to
+    be the content of the certificate file, not the path to the file.
+    For example, on a Linux machine you can use command substitution:
+    <code>--ca-certificate=$(</path/to/certificate_file.pem)</code>.
+    Database Migration Service will use this certificate to verify
+    it's connecting to the correct host. Database Migration Service encrypts the
+    value when storing it.
+  """
+  parser.add_argument('--ca-certificate', help=help_text, required=required)
+
+
+def AddCertificateFlag(parser, required=False):
+  """Adds --certificate flag to the given parser."""
+  help_text = """\
+    x509 PEM-encoded certificate that will be used by the replica to
+    authenticate against the database server. The value for this flag needs to
+    be the content of the certificate file, not the path to the file.
+    For example, on a Linux machine you can use command substitution:
+    <code>--ca-certificate=$(</path/to/certificate_file.pem)</code>.
+  """
+  parser.add_argument('--certificate', help=help_text, required=required)
+
+
+def AddClientCertificateFlag(parser, required=False):
+  """Adds --client-certificate flag to the given parser."""
+  help_text = """\
+    x509 PEM-encoded certificate that will be used by the replica to
+    authenticate against the database server.  The value for this flag needs to
+    be the content of the certificate file, not the path to the file.
+    For example, on a Linux machine you can use command substitution:
+    <code>--ca-certificate=$(</path/to/certificate_file.pem)</code>.
+    Database Migration Service encrypts the value when storing it.
+  """
+  parser.add_argument('--client-certificate', help=help_text, required=required)
+
+
+def AddPrivateKeyFlag(parser, required=False):
+  """Adds --private-key flag to the given parser."""
+  help_text = """\
+    Unencrypted PKCS#1 or PKCS#8 PEM-encoded private key associated with
+    the Client Certificate.  The value for this flag needs to
+    be the content of the certificate file, not the path to the file.
+    For example, on a Linux machine you can use command substitution:
+    <code>--ca-certificate=$(</path/to/certificate_file.pem)</code>.
+    Database Migration Service encrypts the value when storing it.
+  """
+  parser.add_argument('--private-key', help=help_text, required=required)
+
+
+def AddInstanceFlag(parser, required=False):
+  """Adds --instance flag to the given parser."""
+  help_text = """\
+    If the source is a Cloud SQL database, use this field to provide the Cloud
+    SQL instance ID of the source.
+  """
+  parser.add_argument('--instance', help=help_text, required=required)
+
+
+def AddCloudSQLInstanceFlag(parser, required=False):
+  """Adds --cloudsql-instance flag to the given parser."""
+  help_text = """\
+    If the source or destination is a Cloud SQL database, then use this field
+    to provide the respective Cloud SQL instance ID.
+  """
+  parser.add_argument('--cloudsql-instance', help=help_text, required=required)
+
+
+def AddAlloydbClusterFlag(parser, required=False):
+  """Adds the --alloydb-cluster flag to the given parser."""
+  help_text = """\
+    If the destination is an AlloyDB cluster, use this field to provide the
+    AlloyDB cluster ID.
+  """
+  parser.add_argument('--alloydb-cluster', help=help_text, required=required)
+
+
+def AddProviderFlag(parser):
+  """Adds --provider flag to the given parser."""
+  help_text = """\
+    Database provider, for managed databases.
+  """
+  choices = ['RDS', 'CLOUDSQL']
+  parser.add_argument('--provider', help=help_text, choices=choices)
+
+
+def AddRoleFlag(parser):
+  """Adds --role flag to the given parser."""
+  help_text = 'The role of the connection profile.'
+  choices = ['SOURCE', 'DESTINATION']
+  parser.add_argument('--role', help=help_text, choices=choices)
+
+
+def AddEnableIamAuthenticationFlag(parser, required=False, for_create=False):
+  """Adds --enable-iam-authentication flag to the given parser."""
+  help_text = (
+      'Use IAM database authentication to connect to the database. The'
+      ' username will be overridden by the DMS service agent principal.'
+      ' This flag is only supported for PostgreSQL Destinations.'
+  )
+  if for_create:
+    parser.add_argument(
+        '--enable-iam-authentication',
+        help=help_text,
+        action='store_const',
+        const=True,
+        dest='enable_iam_authentication',
+        required=required,
+    )
+  else:
+    iam_authentication_group = parser.add_group(required=required, mutex=True)
+    iam_authentication_group.add_argument(
+        '--enable-iam-authentication',
+        help=help_text,
+        action='store_const',
+        const=True,
+        dest='enable_iam_authentication',
+        required=False,
+    )
+    iam_authentication_group.add_argument(
+        '--disable-iam-authentication',
+        help=help_text,
+        action='store_const',
+        const=False,
+        dest='enable_iam_authentication',
+        required=False,
+    )
+
+
+def ValidateHostPortFlags(args, support_optional_host_port=True):
+  """Validates host and port flags for connection profiles.
+
+  Args:
+    args: argparse.Namespace, The arguments that this command was invoked with.
+    support_optional_host_port: bool, Whether host and port are allowed to be
+      optional for destination profiles with managed instances.
+  """
+  role = getattr(args, 'role', None)
+  if role is not None:
+    role = str(role)
+
+  cloudsql = getattr(args, 'cloudsql_instance', None)
+  alloydb = getattr(args, 'alloydb_cluster', None)
+  instance = getattr(args, 'instance', None)
+  host = getattr(args, 'host', None)
+  port = getattr(args, 'port', None)
+
+  is_destination = role == 'DESTINATION'
+  has_managed = cloudsql or alloydb or instance
+  host_port_required = (
+      not support_optional_host_port or not is_destination or not has_managed
+  )
+
+  if host_port_required:
+    if not host or not port:
+      missing = [f for f, v in [('--host', host), ('--port', port)] if not v]
+      raise calliope_exceptions.RequiredArgumentException(
+          ', '.join(missing),
+          (
+              'Host and Port are required when --role=SOURCE or when '
+              '--cloudsql-instance/--alloydb-cluster are absent.'
+          ),
+      )
+  elif (host is not None) ^ (port is not None):
+    missing = '--port' if host else '--host'
+    raise calliope_exceptions.RequiredArgumentException(
+        missing, '--host and --port must be specified together.'
+    )

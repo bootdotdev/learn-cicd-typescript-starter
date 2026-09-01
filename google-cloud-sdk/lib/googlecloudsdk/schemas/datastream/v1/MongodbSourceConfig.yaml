@@ -1,0 +1,46 @@
+$schema: "http://json-schema.org/draft-06/schema#"
+
+title: datastream v1 MongodbSourceConfig export schema
+description: A gcloud export/import command YAML validation schema.
+type: object
+additionalProperties: false
+properties:
+  COMMENT:
+    type: object
+    description: User specified info ignored by gcloud import.
+    additionalProperties: false
+    properties:
+      template-id:
+        type: string
+      region:
+        type: string
+      description:
+        type: string
+      date:
+        type: string
+      version:
+        type: string
+  UNKNOWN:
+    type: array
+    description: Unknown API fields that cannot be imported.
+    items:
+      type: string
+  excludeObjects:
+    description: The MongoDB collections to exclude from the stream.
+    $ref: MongodbCluster.yaml
+  includeObjects:
+    description: The MongoDB collections to include in the stream.
+    $ref: MongodbCluster.yaml
+  jsonMode:
+    description: MongoDB JSON mode to use for the stream.
+    type: string
+    enum:
+    - CANONICAL
+    - MONGODB_JSON_MODE_UNSPECIFIED
+    - STRICT
+  maxConcurrentBackfillTasks:
+    description: |-
+      Maximum number of concurrent backfill tasks. The number should be non-
+      negative and less than or equal to 50. If not set (or set to 0), the
+      system's default value is used
+    type: integer

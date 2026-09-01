@@ -1,0 +1,754 @@
+# -*- coding: utf-8 -*- #
+# Copyright 2025 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Design Center Command Lib added Flags."""
+
+
+import argparse
+import textwrap
+
+from googlecloudsdk.calliope import arg_parsers
+from googlecloudsdk.calliope import base
+from googlecloudsdk.calliope.concepts import concepts
+from googlecloudsdk.command_lib.util.concepts import concept_parsers
+from googlecloudsdk.core import yaml
+
+
+def GetProjectResourceSpec():
+  return concepts.ResourceSpec(
+      'designcenter.projects',
+      resource_name='project',
+      projectsId=concepts.DEFAULT_PROJECT_ATTRIBUTE_CONFIG,
+  )
+
+
+def GetProjectResourceArg(
+    arg_name='project',
+    help_text=None,
+    positional=False,
+    required=True,
+):
+  """Constructs and returns the Project Resource Argument."""
+  help_text = help_text or 'Project ID.'
+  return concept_parsers.ConceptParser.ForResource(
+      '{}{}'.format('' if positional else '--', arg_name),
+      GetProjectResourceSpec(),
+      help_text,
+      required=required,
+  )
+
+
+def LocationAttributeConfig():
+  return concepts.ResourceParameterAttributeConfig(
+      name='location',
+      help_text='The Cloud location for the {resource}.',
+  )
+
+
+def GetLocationResourceSpec():
+  return concepts.ResourceSpec(
+      'designcenter.projects.locations',
+      resource_name='location',
+      locationsId=LocationAttributeConfig(),
+      projectsId=concepts.DEFAULT_PROJECT_ATTRIBUTE_CONFIG,
+  )
+
+
+def GetLocationResourceArg(
+    arg_name='location',
+    help_text=None,
+    positional=False,
+    required=True,
+):
+  """Constructs and returns the Location Resource Argument."""
+  help_text = help_text or 'Location.'
+
+  return concept_parsers.ConceptParser.ForResource(
+      '{}{}'.format('' if positional else '--', arg_name),
+      GetLocationResourceSpec(),
+      help_text,
+      required=required,
+  )
+
+
+def SpaceResourceAttributeConfig(arg_name, help_text):
+  """Helper function for constructing ResourceAttributeConfig."""
+  return concepts.ResourceParameterAttributeConfig(
+      name=arg_name,
+      help_text=help_text,
+  )
+
+
+def GetSpaceResourceSpec(arg_name='space', help_text=None):
+  """Constructs and returns the Resource specification for Space."""
+  return concepts.ResourceSpec(
+      'designcenter.projects.locations.spaces',
+      resource_name='space',
+      spacesId=SpaceResourceAttributeConfig(arg_name, help_text),
+      projectsId=concepts.DEFAULT_PROJECT_ATTRIBUTE_CONFIG,
+      locationsId=LocationAttributeConfig(),
+  )
+
+
+def GetSpaceResourceArg(
+    arg_name='space', help_text=None, positional=True, required=True
+):
+  """Constructs and returns the Space ID Resource Argument."""
+  help_text = help_text or 'The Space ID.'
+
+  return concept_parsers.ConceptParser.ForResource(
+      '{}{}'.format('' if positional else '--', arg_name),
+      GetSpaceResourceSpec(arg_name, help_text),
+      help_text,
+      required=required,
+  )
+
+
+# -- Revision Resource and Flags --
+
+
+def CatalogAttributeConfig():
+  """Creates an attribute config for the catalog."""
+  return concepts.ResourceParameterAttributeConfig(
+      name='catalog',
+      help_text='The ID of the catalog.'
+  )
+
+
+def CatalogTemplateAttributeConfig():
+  """Creates an attribute config for the template."""
+  return concepts.ResourceParameterAttributeConfig(
+      name='template',
+      help_text='The ID of the template.'
+  )
+
+
+def GetCatalogTemplateRevisionResourceSpec():
+  """Creates the resource spec for a revision."""
+  return concepts.ResourceSpec(
+      'designcenter.projects.locations.spaces.catalogs.templates.revisions',
+      resource_name='revision',
+      revisionsId=concepts.ResourceParameterAttributeConfig(
+          name='revision', help_text='The ID of the revision to create.'
+      ),
+      templatesId=CatalogTemplateAttributeConfig(),
+      catalogsId=CatalogAttributeConfig(),
+      spacesId=SpaceResourceAttributeConfig('space', 'The ID of the space.'),
+      locationsId=LocationAttributeConfig(),
+      projectsId=concepts.DEFAULT_PROJECT_ATTRIBUTE_CONFIG,
+  )
+
+
+def SharedTemplateAttributeConfig():
+  """Creates an attribute config for the shared template."""
+  return concepts.ResourceParameterAttributeConfig(
+      name='shared-template',
+      help_text='The sharedTemplate id of the revision resource.',
+  )
+
+
+def GetSharedTemplateRevisionResourceSpec():
+  """Creates the resource spec for a shared template revision."""
+  return concepts.ResourceSpec(
+      'designcenter.projects.locations.spaces.sharedTemplates.revisions',
+      resource_name='revision',
+      revisionsId=concepts.ResourceParameterAttributeConfig(
+          name='revision',
+          help_text='The revision id of the sharedTemplate revision resource.',
+      ),
+      sharedTemplatesId=SharedTemplateAttributeConfig(),
+      spacesId=SpaceResourceAttributeConfig(
+          'space', 'The space id of the revision resource.'
+      ),
+      locationsId=LocationAttributeConfig(),
+      projectsId=concepts.DEFAULT_PROJECT_ATTRIBUTE_CONFIG,
+  )
+
+
+def AddSharedTemplateRevisionResourceArg(
+    parser, verb='to fetch assessment report for'
+):
+  """Adds the Shared Template Revision resource argument to the parser."""
+  concept_parsers.ConceptParser.ForResource(
+      'revision',
+      GetSharedTemplateRevisionResourceSpec(),
+      'The shared template revision {}.'.format(verb),
+      required=True,
+  ).AddToParser(parser)
+
+
+def AddDescribeLocationFlags(parser):
+  GetLocationResourceArg(positional=True).AddToParser(parser)
+
+
+def AddGetIamPolicyFlags(parser):
+  GetSpaceResourceArg().AddToParser(parser)
+
+
+def AddSetIamPolicyFlags(parser):
+  GetSpaceResourceArg().AddToParser(parser)
+
+
+def AddTestIamPermissionsFlags(parser):
+  GetSpaceResourceArg().AddToParser(parser)
+
+
+def AddCreateCatalogTemplateRevisionFlags(parser):
+  """Adds all flags for the create revision command.
+
+  Args:
+    parser: An argparse.ArgumentParser-like object. It is mocked out in tests.
+  """
+  # This defines the resource argument for the revision.
+  # By using the full resource spec and a positional name ('revision'), the
+  # SDK automatically creates a positional argument for the revision ID and
+  # flags for all its parents (--template, --catalog, --space, etc.).
+  concept_parsers.ConceptParser.ForResource(
+      'revision',
+      GetCatalogTemplateRevisionResourceSpec(),
+      'The revision to create.',
+      required=True,
+  ).AddToParser(parser)
+  parser.add_argument('--description', help='A description for the revision.')
+
+  source_group = parser.add_group(mutex=True, required=True)
+
+  dev_connect_group = source_group.add_group(
+      help='Flags for Developer Connect source.'
+  )
+  dev_connect_group.add_argument(
+      '--developer-connect-repo',
+      help=(
+          'The Developer Connect repository to use as a source. Example: '
+          '`projects/my-project/locations/us-central1/connections/my-connection/'
+          'gitRepositoryLinks/my-repo`'
+      ),
+      required=True,
+  )
+  dev_connect_group.add_argument(
+      '--developer-connect-repo-ref',
+      help=(
+          'The Git ref (branch or tag) within the repository to use. Example:'
+          ' `"refs/tags/v1.0.0"` or `"refs/heads/main"` or '
+          '`"refs/commits/269b518b99d06b31ff938a2d182e75f5e41941c7"`.'
+      ),
+      required=True,
+  )
+  dev_connect_group.add_argument(
+      '--developer-connect-repo-dir',
+      help=(
+          'The directory within the repository to use. Example:'
+          ' `"modules/my-product"`'
+      ),
+      required=True,
+  )
+
+  git_source_group = source_group.add_group(
+      help='Flags for Git source.'
+  )
+  git_source_group.add_argument(
+      '--git-source-repo',
+      help='Git repository for Git source. Example:'
+      ' `GoogleCloudPlatform/terraform-google-cloud-run`',
+      required=True,
+  )
+  git_source_group.add_argument(
+      '--git-source-ref-tag',
+      help='Git reference tag for Git source. Example: `"v1.0.0"`',
+      required=True,
+  )
+  git_source_group.add_argument(
+      '--git-source-dir',
+      help=(
+          'Git directory for Git source. Example: `"modules/my-product"`.'
+          ' This field is optional.'
+      ),
+      required=False,
+  )
+
+  source_group.add_argument(
+      '--application-template-revision-source',
+      help=(
+          'Application template revision to use as source. Example:'
+          ' `projects/my-project/locations/us-central1/spaces/my-space/catalogs/my-catalog/templates/my-template/revisions/r1`'
+      ),
+      required=False,
+  )
+
+  source_group.add_argument(
+      '--gcs-source-uri',
+      help=(
+          'Google Cloud Storage URI for source. Example:'
+          ' `gs://my-bucket/my-template`.'
+      ),
+      required=False,
+  )
+
+  oci_repo_group = source_group.add_group(help='Flags for OCI Repo source.')
+  oci_repo_group.add_argument(
+      '--oci-repo-uri',
+      help=(
+          'OCI Repo URI for OCI Repo source. Example:'
+          ' `oci://us-west1-docker.pkg.dev/my-project/my-repo/my-chart`'
+      ),
+      required=True,
+  )
+  oci_repo_group.add_argument(
+      '--oci-repo-version',
+      help=(
+          'OCI Repo version for OCI Repo source. Example: `"1.0.0"`. This field'
+          ' is optional.'
+      ),
+      required=False,
+  )
+
+  parser.add_argument(
+      '--metadata',
+      type=arg_parsers.YAMLFileContents(),
+      help=(
+          'Path to a local YAML file containing the template metadata. Example:'
+          ' `"path/to/metadata.yaml"`.'
+      ),
+  )
+
+
+def AddRegisterWithApphubFlags(parser):
+  """Adds all flags for the register with apphub command.
+
+  Args:
+    parser: An argparse.ArgumentParser-like object. It is mocked out in tests.
+  """
+  GetSpaceResourceArg(
+      arg_name='space',
+      help_text='The ID of the space.',
+  ).AddToParser(parser)
+  source_group = parser.add_group(mutex=True, required=True)
+  source_group.add_argument(
+      '--apphub-application-uri',
+      help=(
+          'AppHub application URI to register the deployed resource using'
+          ' application template as source in the space.'
+          ' Format: `projects/{projectId}/locations/{locationId}/applications/'
+          '{applicationId}'
+      ),
+  )
+  source_group.add_argument(
+      '--adc-application-uri',
+      help=(
+          'The Application Design Center application URI to register the'
+          ' deployed resources with the AppHub application using Application'
+          ' Design Center application as source in the space. Format:'
+          ' `projects/{projectId}/locations/{locationId}/spaces/{spaceId}/applications/'
+          '{applicationId}`'
+      ),
+  )
+  parser.add_argument(
+      '--tfstate-location',
+      help='Path to the Terraform state file (e.g., `terraform.tfstate`).',
+  )
+  base.ASYNC_FLAG.AddToParser(parser)
+
+
+def AddRegisterAppHubApplicationResourcesFlags(
+    parser: argparse.ArgumentParser) -> None:
+  """Adds all flags for the register app hub application resources command.
+
+  Args:
+    parser: An argparse.ArgumentParser-like object. It is mocked out in tests.
+  """
+  concept_parsers.ConceptParser.ForResource(
+      '--location',
+      GetLocationResourceSpec(),
+      'The location to register resources in.',
+      required=True,
+  ).AddToParser(parser)
+  tfstate_group = parser.add_group(mutex=True)
+  tfstate_group.add_argument(
+      '--tfstate-content',
+      required=False,
+      help=textwrap.dedent("""\
+          The Terraform state (tfstate) content as a raw string.
+          For large state files exceeding 10MB, use the `tfstate-signed-gcs-uri`
+          field instead."""),
+  )
+  tfstate_group.add_argument(
+      '--tfstate-signed-gcs-uri',
+      required=False,
+      help=textwrap.dedent("""\
+          A securely signed Cloud Storage URI pointing to the tfstate file.
+          The URI must be signed to grant the service temporary read access to the
+          state file. ADC imposes a limit on the maximum size of the state file
+          accessed via this URI."""),
+  )
+  parser.add_argument(
+      '--apphub-application',
+      required=True,
+      help="""The name of the AppHub Application.
+      Format:
+      `projects/{project}/locations/{location}/applications/{application}`""",
+  )
+  base.ASYNC_FLAG.AddToParser(parser)
+
+
+def AddTfStateSourceFlags(parser):
+  """Adds flags for specifying the Terraform state source.
+
+  Args:
+    parser: An argparse.ArgumentParser-like object. It is mocked out in tests.
+  """
+  tfstate_source_group = parser.add_group(mutex=True, required=True)
+  tfstate_source_group.add_argument(
+      '--terraform-state',
+      help=(
+          'The Terraform state (tfstate) content as a raw JSON string.'
+          ' Example: \'{"version":4, "resources": [...]}\''
+      ),
+  )
+  tfstate_source_group.add_argument(
+      '--tfstate-signed-gcs-uri',
+      help=(
+          'A securely signed Cloud Storage URI pointing to the tfstate file.'
+          ' Example: `https://storage.googleapis.com/my-bucket/tfstate.json'
+          '?x-goog-signature=...`'
+      ),
+  )
+
+
+def AddServiceAccountFlag(parser):
+  """Adds the service account flag.
+
+  Args:
+    parser: An argparse.ArgumentParser-like object. It is mocked out in tests.
+  """
+  parser.add_argument(
+      '--service-account',
+      help=(
+          'The email address of the service account to use for this operation.'
+          ' Format: `projects/{PROJECT}/serviceAccounts/{EMAIL_ADDRESS}`'
+      ),
+      required=False,
+  )
+
+
+def AddRegisterDeployedApplicationFlags(parser):
+  """Adds flags for the register deployed application command.
+
+  Args:
+    parser: An argparse.ArgumentParser-like object. It is mocked out in tests.
+  """
+  concept_parsers.ConceptParser.ForResource(
+      'APPLICATION',
+      GetApplicationResourceSpec(),
+      'The application with which the resources will be registered.',
+      required=True).AddToParser(parser)
+  AddTfStateSourceFlags(parser)
+  AddServiceAccountFlag(parser)
+  base.ASYNC_FLAG.AddToParser(parser)
+
+
+def AddRegisterDeployedResourcesFlags(parser):
+  """Adds flags for the register deployed resources command.
+
+  Args:
+    parser: An argparse.ArgumentParser-like object. It is mocked out in tests.
+  """
+  GetSpaceResourceArg(
+      arg_name='space',
+      help_text='The parent space.',
+  ).AddToParser(parser)
+  parser.add_argument(
+      '--apphub-application',
+      help=(
+          'The name of the AppHub Application. Format:'
+          ' `projects/{project}/locations/{location}/applications/{application}`'
+      ),
+      required=True,
+  )
+  AddTfStateSourceFlags(parser)
+  AddServiceAccountFlag(parser)
+  base.ASYNC_FLAG.AddToParser(parser)
+
+
+def AddInferConnectionsFlags(parser):
+  """Adds all flags for the infer connections command.
+
+  Args:
+    parser: An argparse.ArgumentParser-like object. It is mocked out in tests.
+  """
+  base.ASYNC_FLAG.AddToParser(parser)
+  GetSpaceResourceArg('space', 'The space ID.').AddToParser(parser)
+  parser.add_argument(
+      '--catalog-template-revision-uris',
+      type=arg_parsers.ArgList(),
+      metavar='CATALOG_TEMPLATE_REVISION_URI',
+      help=(
+          'A comma-separated list of catalog template revision URIs to infer'
+          ' connections for. If not provided, the system infers connections'
+          ' for the latest revisions of all catalog templates in all the'
+          ' catalogs present in the space.'
+          ' Format:'
+          ' `projects/{projectId}/locations/{locationId}/spaces/{spaceId}/'
+          'catalogs/{catalogId}/templates/{templateId}/revisions/{revisionId}`'
+      ),
+  )
+  parser.add_argument(
+      '--use-gemini',
+      action='store_true',
+      default=False,
+      help='Use Gemini to infer connections.',
+  )
+
+
+def GetApplicationTemplateResourceSpec(arg_name='application_template_id'):
+  """Constructs and returns the Resource specification for Application Template."""
+  return concepts.ResourceSpec(
+      'designcenter.projects.locations.spaces.applicationTemplates',
+      resource_name='application_template',
+      applicationTemplatesId=concepts.ResourceParameterAttributeConfig(
+          name=arg_name, help_text='The ID of the application template.'
+      ),
+      spacesId=SpaceResourceAttributeConfig('space', 'The ID of the space.'),
+      locationsId=LocationAttributeConfig(),
+      projectsId=concepts.DEFAULT_PROJECT_ATTRIBUTE_CONFIG,
+  )
+
+
+def AddApplicationTemplateResourceArg(parser, verb):
+  """Adds the Application Template resource argument to the given parser."""
+  concept_parsers.ConceptParser.ForResource(
+      'APPLICATION_TEMPLATE',
+      GetApplicationTemplateResourceSpec(),
+      'The application template {} IaC.'.format(verb),
+      required=True).AddToParser(parser)
+
+
+def GetApplicationResourceSpec(arg_name='application'):
+  """Constructs and returns the Resource specification for Application."""
+  return concepts.ResourceSpec(
+      'designcenter.projects.locations.spaces.applications',
+      resource_name='application',
+      applicationsId=concepts.ResourceParameterAttributeConfig(
+          name=arg_name, help_text='The ID of the application.'
+      ),
+      projectsId=concepts.DEFAULT_PROJECT_ATTRIBUTE_CONFIG,
+      locationsId=LocationAttributeConfig(),
+      spacesId=SpaceResourceAttributeConfig('space', 'The ID of the space.'),
+  )
+
+
+def AddApplicationResourceArg(parser, verb):
+  """Adds the Application resource argument to the given parser."""
+  concept_parsers.ConceptParser.ForResource(
+      'APPLICATION',
+      GetApplicationResourceSpec(),
+      'The application {} IaC.'.format(verb),
+      required=True).AddToParser(parser)
+
+
+def AddImportIacFlags(parser):
+  """Adds flags for import-iac commands to the given parser."""
+  source_group = parser.add_mutually_exclusive_group(required=True)
+  source_group.add_argument(
+      '--gcs-uri',
+      help=('The Cloud Storage URI of the Terraform code '
+            '(e.g., gs://my-bucket/iac).'),
+  )
+  source_group.add_argument(
+      '--iac-module-from-file',
+      type=arg_parsers.FileContents(),
+      help=('Path to a local YAML or JSON file containing the IaC module '
+            'definition.'),
+  )
+  parser.add_argument(
+      '--allow-partial-import',
+      action='store_true',
+      default=False,
+      help=('If set, partially import valid IaC changes and ignore invalid '
+            'ones.'),
+  )
+  parser.add_argument(
+      '--validate-iac',
+      action='store_true',
+      default=False,
+      help='Validate the IaC without performing the import.',
+  )
+
+
+def AddDeployApplicationFlags(parser):
+  """Adds all flags for the deploy application command.
+
+  Args:
+    parser: An argparse.ArgumentParser-like object. It is mocked out in tests.
+  """
+  parser.add_argument(
+      '--replace',
+      action='store_true',
+      default=False,
+      help=(
+          'Flag to update the existing deployment. If not set or false, deploy'
+          ' will fail if application state is in the DEPLOYED state.'
+      ),
+  )
+  parser.add_argument(
+      '--worker-pool',
+      type=arg_parsers.RegexpValidator(
+          r'projects/[^/]+/locations/[^/]+/workerPools/[^/]+',
+          'The worker pool resource name must be in the format: '
+          '`projects/{project}/locations/{location}/workerPools/{workerPoolId}`',
+      ),
+      help=textwrap.dedent("""\
+          The user-specified Worker Pool resource in which the Cloud Build job
+          will execute. Format:
+          projects/{project}/locations/{location}/workerPools/{workerPoolId}
+          If this flag is omitted, the worker pool already defined on the
+          application will be used. If no worker pool is defined on the
+          application, the default Cloud Build worker pool is used. The
+          worker pool must exist in the same region as the application.\
+      """),
+  )
+
+  parser.add_argument(
+      '--service-account',
+      help=textwrap.dedent('''\
+          The service account to use for this deployment.
+
+          * If provided, this service account will be used to execute the
+            deployment process, taking precedence over any service_account
+            specified on the Application resource.
+          * The caller must have the "iam.serviceAccounts.actAs" permission on
+            this service account.
+          * If this field is omitted, the system will use the "service_account"
+            defined within the Application resource.
+          * If this field is omitted with --create-sa flag, the system will create a new and unique service_account
+            and use it for the deployment.
+          * We recommend that you provide a service account here or on the
+            Application resource. If you don't provide a service account, the
+            deployment will fail.
+          * If the `--create-sa` flag is also provided, this value is the ID of
+            a new service account to be created (e.g., `my-new-sa`).
+
+          Format: `projects/{PROJECT}/serviceAccounts/{EMAIL_ADDRESS}` (when not
+          using `--create-sa`)
+          '''),
+  )
+  parser.add_argument(
+      '--create-sa',
+      action='store_true',
+      help='Create a new service account for the deployment.',
+  )
+
+
+def ParseIacModuleFile(file_contents):
+  """Parses YAML or JSON file contents into a Python dict."""
+  try:
+    return yaml.load(file_contents)
+  except Exception as e:
+    raise arg_parsers.ArgumentTypeError(
+        'Failed to parse IaC module file: {}'.format(e))
+
+
+def AddPreviewApplicationFlags(parser):
+  """Adds all flags for the preview application command.
+
+  Args:
+    parser: An argparse.ArgumentParser-like object. It is mocked out in tests.
+  """
+  parser.add_argument(
+      '--worker-pool',
+      type=arg_parsers.RegexpValidator(
+          r'projects/[^/]+/locations/[^/]+/workerPools/[^/]+',
+          'The worker pool resource name must be in the format: '
+          '`projects/{project}/locations/{location}/workerPools/{workerPoolId}`',
+      ),
+      help=textwrap.dedent("""\
+          The user-specified Worker Pool resource in which the Cloud Build job
+          will execute. Format:
+          projects/{project}/locations/{location}/workerPools/{workerPoolId}
+          If this flag is omitted, the worker pool already defined on the
+          application will be used. If no worker pool is defined on the
+          application, the default Cloud Build worker pool is used. The
+          worker pool must exist in the same region as the application.\
+      """),
+  )
+
+  parser.add_argument(
+      '--service-account',
+      help=textwrap.dedent('''\
+          The service account to use for this preview.
+
+          * If provided, this service account will be used to execute the
+            preview process, taking precedence over any service_account
+            specified on the Application resource.
+          * The caller must have the "iam.serviceAccounts.actAs" permission on
+            this service account.
+          * If this field is omitted, the system will use the "service_account"
+            defined within the Application resource.
+          * If this field is omitted with --create-sa flag, the system will create a new and unique service_account
+            and use it for the preview.
+          * We recommend that you provide a service account here or on the
+            Application resource. If you don't provide a service account, the
+            preview will fail.
+          * If the `--create-sa` flag is also provided, this value is the ID of
+            a new service account to be created (e.g., `my-new-sa`).
+
+          Format: `projects/{PROJECT}/serviceAccounts/{EMAIL_ADDRESS}` (when not
+          using `--create-sa`)
+          '''),
+  )
+  parser.add_argument(
+      '--create-sa',
+      action='store_true',
+      help='Create a new service account for the preview.',
+  )
+
+
+def AddGenerateAssessmentReportFlags(parser):
+  """Adds flags for GenerateAssessmentReport command."""
+  parser.add_argument(
+      '--service-account',
+      help=textwrap.dedent('''\
+          The full resource name of the service account to use for this
+          assessment report generation operation.
+
+          * This service account will be used to execute the assessment report
+            generation process.
+          * The caller must have the "iam.serviceAccounts.actAs" permission on
+            this service account.
+          Format: `projects/{PROJECT}/serviceAccounts/{EMAIL_ADDRESS}`
+          '''),
+      required=False,
+  )
+
+
+def AddGenerateTerraformAssessmentReportFlags(parser):
+  """Adds flags for GenerateTerraformAssessmentReport command.
+
+  Args:
+    parser: An argparse.ArgumentParser-like object. It is mocked out in tests.
+  """
+  GetSpaceResourceArg(positional=True).AddToParser(parser)
+
+  parser.add_argument(
+      '--terraform-plan',
+      type=arg_parsers.FileContents(binary=True),
+      required=True,
+      help='Path to the Terraform plan file (JSON format).',
+  )
+
+  parser.add_argument(
+      '--additional-frameworks',
+      type=arg_parsers.ArgList(),
+      metavar='FRAMEWORK',
+      help='Additional frameworks to run assessment against.',
+  )

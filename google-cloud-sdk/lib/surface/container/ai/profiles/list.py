@@ -1,0 +1,320 @@
+# -*- coding: utf-8 -*- #
+# Copyright 2025 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Lists compatible accelerator profiles for GKE Inference Quickstart."""
+
+from apitools.base.py import exceptions as apitools_exceptions
+from googlecloudsdk.api_lib.ai.recommender import util
+from googlecloudsdk.api_lib.util import exceptions
+from googlecloudsdk.calliope import base
+from googlecloudsdk.command_lib.run import commands
+from googlecloudsdk.command_lib.run.printers import profiles_csv_printer
+from googlecloudsdk.command_lib.run.printers import profiles_printer_ga as profiles_printer
+from googlecloudsdk.core.resource import resource_printer
+
+
+_EXAMPLES = """
+To list compatible accelerator profiles for a model, run:
+
+$ {command} --model=deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
+"""
+
+
+def decimal_to_amount(decimal_value):
+  """Converts a decimal representation to an Amount proto."""
+
+  units = int(decimal_value)
+  nanos = int((decimal_value - units) * 1e9)
+
+  return (units, nanos)
+
+
+def amount_to_decimal(cost):
+  """Converts cost to a decimal representation."""
+  units = cost.units
+  if not units:
+    units = 0
+  decimal_value = +(units + cost.nanos / 1e9)
+  return f"{decimal_value:.3f}"
+
+
+def get_decimal_cost(costs):
+  """Returns the cost per million normalized output tokens as a decimal.
+
+  Args:
+    costs: The costs to convert.
+  """
+  output_token_cost = "N/A"
+  if costs and costs[0].costPerMillionOutputTokens:
+    output_token_cost = amount_to_decimal(
+        costs[0].costPerMillionOutputTokens
+    )
+  input_token_cost = "N/A"
+  if costs and costs[0].costPerMillionInputTokens:
+    input_token_cost = amount_to_decimal(costs[0].costPerMillionInputTokens)
+  return (input_token_cost, output_token_cost)
+
+
+@base.DefaultUniverseOnly
+@base.ReleaseTracks(base.ReleaseTrack.GA)
+class List(commands.List):
+  """List compatible accelerator profiles.
+
+  This command lists all supported accelerators with their performance details.
+  By default, the supported accelerators are displayed in a table format with
+  select information for each accelerator. To see all details, use
+  --format=yaml or --format=csvprofile.
+
+  To get supported model, model servers, and model server versions, run `gcloud
+  container ai profiles models list`, `gcloud container ai
+  profiles model-servers list`, and `gcloud container ai profiles
+  model-server-versions list`.
+  """
+
+  @staticmethod
+  def Args(parser):
+    parser.add_argument(
+        "--model",
+        help="The model.",
+    )
+    parser.add_argument(
+        "--model-server",
+        help="The model server.",
+    )
+    parser.add_argument(
+        "--model-server-version",
+        help=(
+            "The model server version. If omitted, the most recently"
+            " benchmarked version is used. Other options include the model"
+            " server version of a profile, or 'all' to return all versions."
+        ),
+    )
+    parser.add_argument(
+        "--target-ntpot-milliseconds",
+        type=int,
+        help=(
+            "The target normalized time per output token (NTPOT) in"
+            " milliseconds. NTPOT is measured as the request_latency /"
+            " output_tokens. If this field is set, the command will only return"
+            " accelerators that can meet the target ntpot milliseconds and"
+            " display their throughput performance at the target latency."
+            " Otherwise, the command will return all accelerators and display"
+            " their highest throughput performance."
+        ),
+    )
+    parser.add_argument(
+        "--target-ttft-milliseconds",
+        type=int,
+        help=(
+            "The target time to first token (TTFT) in"
+            " milliseconds. TTFT is measured as the request_latency /"
+            " output_tokens. If this field is set, the command will only return"
+            " profiles that can meet the target ttft milliseconds and"
+            " display their throughput performance at the target latency."
+            " Otherwise, the command will return all profiles and display"
+            " their highest throughput performance."
+        ),
+    )
+    parser.add_argument(
+        "--target-itl-milliseconds",
+        type=int,
+        help=(
+            "If specified, results will only show profiles with instance types"
+            " that can meet the latency target and will show their throughput"
+            " performances at the target inter-token latency (ITL)."
+        ),
+    )
+    parser.add_argument(
+        "--target-cost-per-million-output-tokens",
+        type=float,
+        required=False,
+        help=(
+            "The target cost per million output tokens to filter profiles by,"
+            " unit is 1 USD up to 5 decimal places."
+        ),
+    )
+    parser.add_argument(
+        "--target-cost-per-million-input-tokens",
+        type=float,
+        required=False,
+        help=(
+            "The target cost per million input tokens to filter profiles by,"
+            " unit is 1 USD up to 5 decimal places."
+        ),
+    )
+    parser.add_argument(
+        "--pricing-model",
+        required=False,
+        type=str,
+        help=(
+            "The pricing model to use to calculate token cost. Currently, this"
+            " supports on-demand, spot, 3-years-cud, 1-year-cud"
+        ),
+    )
+    parser.add_argument(
+        "--format",
+        help=(
+            "The output format. Default is profile, which displays the profile"
+            " information in a table format, including cost conversions."
+            " csvprofile displays the profile information in a CSV"
+            " format.Options include csvprofile, profile, and yaml. "
+        ),
+    )
+    parser.add_argument(
+        "--use-case",
+        required=False,
+        type=str,
+        help=(
+            " If specified, results will only show profiles that match the"
+            " provided use case. Options are: Advanced Customer Support, Code"
+            " Completion, Text Summarization, Chatbot (ShareGPT), Text"
+            " Generation, Deep Research"
+        ),
+    )
+    parser.add_argument(
+        "--target-input-length",
+        required=False,
+        type=int,
+        help=(
+            " If specified, results will only show profiles that have an input"
+            " length within 20% of the specified one. Only works alongside"
+            " output length."
+        ),
+    )
+    parser.add_argument(
+        "--target-output-length",
+        required=False,
+        type=int,
+        help=(
+            "If specified, results will only show profiles that have an output"
+            " length within 20% of the specified one. Only works alongside"
+            " input length."
+        ),
+    )
+    parser.add_argument(
+        "--serving-stack",
+        required=False,
+        help=(
+            "The serving stack to filter profiles by. If not"
+            " provided, profiles for all serving stacks that support"
+            " the given model and model server will be returned."
+        ),
+    )
+    parser.add_argument(
+        "--serving-stack-version",
+        required=False,
+        help=(
+            "The serving stack version. If omitted, the most recently"
+            " benchmarked version is used. Other options include the serving"
+            " stack version of a profile, or 'all' to return all versions."
+        ),
+    )
+    resource_printer.RegisterFormatter(
+        profiles_printer.PROFILES_PRINTER_FORMAT,
+        profiles_printer.ProfilePrinter,
+    )
+    resource_printer.RegisterFormatter(
+        profiles_csv_printer.PROFILES_PRINTER_FORMAT,
+        profiles_csv_printer.ProfileCSVPrinter,
+    )
+    parser.display_info.AddFormat(profiles_printer.PROFILES_PRINTER_FORMAT)
+
+  def Run(self, args):
+    client = util.GetClientInstance(base.ReleaseTrack.GA)
+    messages = util.GetMessagesModule(base.ReleaseTrack.GA)
+
+    performance_requirements = messages.PerformanceRequirements()
+    workload_spec = messages.WorkloadSpec()
+    if args.target_ntpot_milliseconds:
+      performance_requirements.targetNtpotMilliseconds = (
+          args.target_ntpot_milliseconds
+      )
+    if args.target_ttft_milliseconds:
+      performance_requirements.targetTtftMilliseconds = (
+          args.target_ttft_milliseconds
+      )
+    if args.target_itl_milliseconds:
+      performance_requirements.targetItlMilliseconds = (
+          args.target_itl_milliseconds
+      )
+    if args.use_case:
+      workload_spec.useCase = (
+          args.use_case
+      )
+    if args.target_input_length:
+      workload_spec.averageInputLength = (
+          args.target_input_length
+      )
+    if args.target_output_length:
+      workload_spec.averageOutputLength = (
+          args.target_output_length
+      )
+    if (
+        args.target_cost_per_million_output_tokens
+        or args.target_cost_per_million_input_tokens
+        or args.pricing_model
+    ):
+      cost = messages.Cost()
+      if args.target_cost_per_million_output_tokens:
+        units, nanos = decimal_to_amount(
+            args.target_cost_per_million_output_tokens
+        )
+        cost.costPerMillionOutputTokens = messages.Amount(
+            units=units, nanos=nanos
+        )
+      if args.target_cost_per_million_input_tokens:
+        units, nanos = decimal_to_amount(
+            args.target_cost_per_million_input_tokens
+        )
+        cost.costPerMillionInputTokens = messages.Amount(
+            units=units, nanos=nanos
+        )
+      if args.pricing_model:
+        cost.pricingModel = args.pricing_model
+      performance_requirements.targetCost = cost
+
+    serving_stack = None
+    if args.serving_stack:
+      serving_stack = messages.ServingStack(
+          name=args.serving_stack,
+      )
+      if args.serving_stack_version:
+        serving_stack.version = args.serving_stack_version
+
+    try:
+      request = messages.FetchProfilesRequest(
+          model=args.model,
+          modelServer=args.model_server,
+          modelServerVersion=args.model_server_version,
+          servingStack=serving_stack,
+      )
+      if (
+          performance_requirements.targetNtpotMilliseconds is not None
+          or performance_requirements.targetTtftMilliseconds is not None
+          or performance_requirements.targetCost is not None
+      ):
+        request.performanceRequirements = performance_requirements
+      if (
+          workload_spec.useCase is not None
+          or workload_spec.averageInputLength is not None
+          or workload_spec.averageOutputLength is not None
+      ):
+        request.workloadSpec = workload_spec
+      response = client.profiles.Fetch(request)
+      if response.profile:
+        return response.profile
+      else:
+        return []
+    except apitools_exceptions.HttpError as error:
+      raise exceptions.HttpException(error, util.HTTP_ERROR_FORMAT)

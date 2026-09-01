@@ -1,0 +1,544 @@
+# -*- coding: utf-8 -*- #
+# Copyright 2019 Google Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Helper module for context aware access."""
+
+
+import atexit
+import enum
+import json
+import os
+
+from google.auth import exceptions as google_auth_exceptions
+from google.auth.transport import _mtls_helper
+from googlecloudsdk.command_lib.auth import enterprise_certificate_config
+from googlecloudsdk.core import config
+from googlecloudsdk.core import exceptions
+from googlecloudsdk.core import log
+from googlecloudsdk.core import properties
+from googlecloudsdk.core.util import files
+from googlecloudsdk.core.util import platforms
+import six
+
+
+CONTEXT_AWARE_ACCESS_DENIED_ERROR = 'access_denied'
+CONTEXT_AWARE_ACCESS_DENIED_ERROR_DESCRIPTION = 'Account restricted'
+# TODO: b/339747060 - Revert back to the old message when b/309559824 is fixed.
+# CONTEXT_AWARE_ACCESS_HELP_MSG = (
+#     'Access was blocked by Context Aware Access, please contact your'
+#     ' administrator to gain access.'
+# )
+
+CONTEXT_AWARE_ACCESS_HELP_MSG = (
+    'Access was blocked by Context Aware Access. If you are using gcloud on a'
+    ' remote machine via SSH and your organization requires gcloud from a'
+    ' company managed device, please first CRD (Chrome Remote Desktop) or RDP'
+    ' (Remote Desktop Protocol) into your remote machine and log into Chrome'
+    ' using your credentials to register your remote machine. After that, you'
+    ' may need to wait for a few minutes before retrying.'
+)
+CONTEXT_AWARE_ACCESS_HELP_MSG_GOOGLER = (
+    'Access was blocked by Context Aware Access. To resolve this, please visit'
+    ' go/gcloud-caa-error and follow the provided instructions.'
+)
+# The suggestion is to set CLOUDSDK_CONTEXT_AWARE_USE_CLIENT_CERTIFICATE to
+# true because properties.VALUES.context_aware.use_client_certificate.GetBool()
+# would be overridden by the environment variable, and does not solve the issue.
+CONTEXT_AWARE_ACCESS_MTLS_HELP_MSG_GOOGLER = (
+    'Access was blocked by Context Aware Access. You can try to fix this by'
+    ' updating the context_aware/use_client_certificate flag to true. To do'
+    ' that, run `gcloud config set context_aware/use_client_certificate true`'
+    ' and try running your command again. If your device has the env variable'
+    ' CLOUDSDK_CONTEXT_AWARE_USE_CLIENT_CERTIFICATE configured, ensure it is'
+    ' set to true as that overrides the gcloud properties flag.'
+)
+
+ENDPOINT_VERIFICATION_AGENT_HELP_MSG = (
+    'Use of client certificate requires endpoint verification agent. '
+    'Run `gcloud topic client-certificate` for installation guide.'
+)
+ENDPOINT_VERIFICATION_AGENT_HELP_MSG_GOOGLER = (
+    'Use of client certificate requires endpoint verification agent. '
+    'Run `gcloud topic client-certificate` for installation guide. '
+    'If you already have an endpoint agent installed, perform a sync by '
+    'following the instructions at go/gcloud-caa-error.'
+)
+
+
+def IsContextAwareAccessDeniedError(exc):
+  exc_text = six.text_type(exc)
+  return (
+      CONTEXT_AWARE_ACCESS_DENIED_ERROR in exc_text
+      and CONTEXT_AWARE_ACCESS_DENIED_ERROR_DESCRIPTION in exc_text
+  )
+
+
+DEFAULT_AUTO_DISCOVERY_FILE_PATH = os.path.join(
+    files.GetHomeDir(), '.secureConnect', 'context_aware_metadata.json'
+)
+
+
+def _AutoDiscoveryFilePath():
+  """Return the file path of the context aware configuration file."""
+  # auto_discovery_file_path is an override used for testing purposes.
+  cfg_file = properties.VALUES.context_aware.auto_discovery_file_path.Get()
+  if cfg_file is not None:
+    return cfg_file
+  return DEFAULT_AUTO_DISCOVERY_FILE_PATH
+
+
+class ContextAwareAccessError:
+  """Get ContextAwareAccessError based on the users organization."""
+
+  @staticmethod
+  def Get():
+    """Get ContextAwareAccessError based on the users organization.
+
+    Returns:
+      str: Context aware access help message.
+    """
+    if properties.IsInternalUserCheck():
+      if not properties.VALUES.context_aware.use_client_certificate.GetBool():
+        return CONTEXT_AWARE_ACCESS_MTLS_HELP_MSG_GOOGLER
+      else:
+        return CONTEXT_AWARE_ACCESS_HELP_MSG_GOOGLER
+    return CONTEXT_AWARE_ACCESS_HELP_MSG
+
+
+class ConfigException(exceptions.Error):
+
+  def __init__(self, is_internal_user):
+    if is_internal_user:
+      msg = ENDPOINT_VERIFICATION_AGENT_HELP_MSG_GOOGLER
+    else:
+      msg = ENDPOINT_VERIFICATION_AGENT_HELP_MSG
+    super(ConfigException, self).__init__(msg)
+
+
+class CertProvisionException(exceptions.Error):
+  """Represents errors when provisioning a client certificate."""
+
+  pass
+
+
+def SSLCredentials(config_path):
+  """Generates the client SSL credentials.
+
+  Args:
+    config_path: path to the context aware configuration file.
+
+  Raises:
+    CertProvisionException: if the cert could not be provisioned.
+    ConfigException: if there is an issue in the context aware config.
+
+  Returns:
+    Tuple[bytes, bytes]: client certificate and private key bytes in PEM format.
+  """
+  try:
+    (has_cert, cert_bytes, key_bytes, _) = (
+        _mtls_helper.get_client_ssl_credentials(
+            generate_encrypted_key=False,
+            context_aware_metadata_path=config_path,
+        )
+    )
+    if has_cert:
+      return cert_bytes, key_bytes
+  except google_auth_exceptions.ClientCertError as caught_exc:
+    new_exc = CertProvisionException(caught_exc)
+    six.raise_from(new_exc, caught_exc)
+  raise ConfigException(properties.IsInternalUserCheck())
+
+
+def EncryptedSSLCredentials(config_path):
+  """Generates the encrypted client SSL credentials.
+
+  The encrypted client SSL credentials are stored in a file which is returned
+  along with the password.
+
+  Args:
+    config_path: path to the context aware configuration file.
+
+  Raises:
+    CertProvisionException: if the cert could not be provisioned.
+    ConfigException: if there is an issue in the context aware config.
+
+  Returns:
+    Tuple[str, bytes]: cert and key file path and passphrase bytes.
+  """
+  try:
+    (has_cert, cert_bytes, key_bytes, passphrase_bytes) = (
+        _mtls_helper.get_client_ssl_credentials(
+            generate_encrypted_key=True, context_aware_metadata_path=config_path
+        )
+    )
+    if has_cert:
+      cert_path = os.path.join(config.Paths().global_config_dir, 'caa_cert.pem')
+      with files.BinaryFileWriter(cert_path) as f:
+        f.write(cert_bytes)
+        f.write(key_bytes)
+      return cert_path, passphrase_bytes
+  except google_auth_exceptions.ClientCertError as caught_exc:
+    new_exc = CertProvisionException(caught_exc)
+    six.raise_from(new_exc, caught_exc)
+  except files.Error as e:
+    log.debug('context aware settings discovery file %s - %s', config_path, e)
+
+  raise ConfigException(properties.IsInternalUserCheck())
+
+
+def _ShouldRepairECP(cert_config):
+  """Check if ECP binaries should be installed and the ECP config updated."""
+  if 'cert_configs' not in cert_config:
+    return False
+
+  if len(cert_config['cert_configs'].keys()) < 1:
+    return False
+
+  if 'libs' not in cert_config:
+    return False
+
+  expected_keys = set(['ecp', 'ecp_client', 'tls_offload', 'ecp_http_proxy'])
+
+  actual_keys = set(cert_config['libs'].keys())
+
+  if expected_keys != actual_keys:
+    return True
+
+  # Even if keys match, check if the binaries actually exist on disk.
+  for key in expected_keys:
+    path = cert_config['libs'].get(key)
+    if not path or not os.path.exists(path):
+      return True
+
+  return False
+
+
+def _GetPlatform():
+  platform = platforms.Platform.Current()
+  if (
+      platform.operating_system == platforms.OperatingSystem.MACOSX
+      and platform.architecture == platforms.Architecture.x86_64
+  ):
+    if platforms.Platform.IsActuallyM1ArmArchitecture():
+      platform.architecture = platforms.Architecture.arm
+
+  return platform
+
+
+def _InstallECP(updater, sdk_root: str):
+  """Installs enterprise-certificate-proxy component.
+
+  Args:
+    updater: update_manager.UpdateManager, the update manager instance.
+    sdk_root: str, the root directory of the Google Cloud SDK installation.
+
+  Raises:
+    exceptions.Error: If the user lacks admin/write permissions.
+    update_manager.MissingRequiredComponentsError: If component install fails.
+  """
+  from googlecloudsdk.core.updater import update_manager  # pylint:disable=g-import-not-at-top
+
+  log.status.Print(
+      'Device appears to be enrolled in Certificate Based Access but is'
+      ' missing critical components. Installing'
+      ' enterprise-certificate-proxy and restarting gcloud.'
+  )
+  restart_args = ['components', 'install', 'enterprise-certificate-proxy']
+  try:
+    if not updater.Install(
+        ['enterprise-certificate-proxy'],
+        throw_if_unattended=True,
+        restart_args=restart_args,
+    ):
+      raise update_manager.MissingRequiredComponentsError(
+          'Enterprise Certificate Proxy could not be installed.'
+      )
+  except exceptions.RequiresAdminRightsError as e:
+    raise exceptions.Error(
+        'Enterprise Certificate Proxy cannot be repaired because you do not'
+        ' have permission to modify the Google Cloud SDK installation'
+        ' directory [{sdk_root}]. Please reinstall Google Cloud SDK in a'
+        ' location where you have write permissions, such as your home'
+        ' directory.'.format(sdk_root=sdk_root)
+    ) from e
+
+
+def _RepairECP(cert_config_file_path: str):
+  """Install ECP and update the ecp config to include the new binaries.
+
+  Args:
+    cert_config_file_path: The filepath of the active certificate config.
+
+  See go/gcloud-ecp-repair.
+  """
+
+  sdk_root = config.Paths().sdk_root
+  if not sdk_root:
+    log.debug('Skipping ECP repair because the SDK root is not set.')
+    return
+  if not config.Paths().sdk_bin_path:
+    log.debug('Skipping ECP repair because the SDK bin path is not set.')
+    return
+
+  # Temporarily disable client certificate to avoid deadlock.
+  # TODO(b/544752521): See if this disabling can be removed.
+  properties.VALUES.context_aware.use_client_certificate.Set(False)
+
+  # Update manager depends on Context Aware, so cannot import it at the top.
+  from googlecloudsdk.core.updater import update_manager  # pylint:disable=g-import-not-at-top
+
+  platform = _GetPlatform()
+  updater = update_manager.UpdateManager(
+      sdk_root=sdk_root, url=None, platform_filter=platform
+  )
+
+  installed_components = updater.GetCurrentVersionsInformation(
+      include_hidden=True
+  )
+  needs_install = 'enterprise-certificate-proxy' not in installed_components
+
+  if needs_install:
+    _InstallECP(updater, sdk_root)
+
+  enterprise_certificate_config.update_config(
+      enterprise_certificate_config.platform_to_config(platform),
+      output_file=cert_config_file_path,
+  )
+  properties.VALUES.context_aware.use_client_certificate.Set(True)
+
+  if needs_install:
+    update_manager.RestartCommand()
+
+
+def GetCertificateConfig(certificate_config_file_path: str):
+  """Loads and returns the enterprise certificate configuration from the given file path.
+
+  Args:
+    certificate_config_file_path: The path to the JSON configuration file.
+
+  Returns:
+    A dictionary representing the parsed JSON configuration.
+
+  Raises:
+    CertProvisionException: If the file cannot be read or is not valid JSON.
+  """
+
+  try:
+    content = files.ReadFileContents(certificate_config_file_path)
+    return json.loads(content)
+  except ValueError as caught_exc:
+    new_exc = CertProvisionException(
+        'The enterprise certificate config file is not a valid JSON file',
+        caught_exc,
+    )
+    six.raise_from(new_exc, caught_exc)
+  except files.Error as caught_exc:
+    new_exc = CertProvisionException(
+        'Failed to read enterprise certificate config file', caught_exc
+    )
+    six.raise_from(new_exc, caught_exc)
+
+
+def _GetCertificateConfigFile():
+  """Finds, loads, validates, and potentially repairs the enterprise certificate config file.
+
+  This function determines the path to the config file by first checking the
+  `context_aware.certificate_config_file_path` property. If that is not set,
+  it falls back to the default path from `config.CertConfigDefaultFilePath()`.
+
+  If the file exists, it's read and parsed as JSON. It then performs
+  validations, such as ensuring that if an ECP binary path is specified, that
+  binary file actually exists on the filesystem.
+
+  Lastly, it may also trigger an in-place repair of the ECP configuration
+  by installing missing components if needed.
+
+  Returns:
+      str: The path to the config file if found and valid.
+      Returns None if the config file does not exist.
+
+  Raises:
+      CertProvisionException:
+          - If the config file fails to be read (e.g., file permissions).
+          - If the config file content is not valid JSON.
+          - If an 'ecp' or 'ecp_http_proxy' (if enabled) binary path is
+          specified
+            in the config but the file is not found.
+  """
+
+  # First see if there is a config file.
+  file_path = properties.VALUES.context_aware.certificate_config_file_path.Get()
+  if file_path is None:
+    file_path = config.CertConfigDefaultFilePath()
+
+  if not os.path.exists(file_path):
+    return None
+
+  cert_config = GetCertificateConfig(file_path)
+
+  if _ShouldRepairECP(cert_config):
+    _RepairECP(file_path)
+    cert_config = GetCertificateConfig(file_path)
+
+  # Check if the config file contains the ecp binary path.
+  # If ecp binary path is provided but the binary doesn't exist, throw
+  # exception
+  if (
+      'libs' in cert_config
+      and 'ecp' in cert_config['libs']
+      and not os.path.exists(cert_config['libs']['ecp'])
+  ):
+    raise CertProvisionException(
+        'Enterprise certificate provider (ECP) binary path'
+        ' (cert_config["libs"]["ecp"]) specified in enterprise certificate'
+        ' config file was not found. Cannot use mTLS with ECP if the ECP binary'
+        ' does not exist. Please check the ECP configuration. See `gcloud topic'
+        ' client-certificate` to learn more about ECP. \nIf this error is'
+        ' unexpected either delete {} or generate a new configuration with `$'
+        ' gcloud auth enterprise-certificate-config create --help` '.format(
+            file_path
+        )
+    )
+
+  # If ECP HTTP proxy is specified in the config, verify that the binary exists.
+  if (
+      'libs' in cert_config
+      and 'ecp_http_proxy' in cert_config['libs']
+      and not os.path.exists(cert_config['libs']['ecp_http_proxy'])
+  ):
+    raise CertProvisionException(
+        'Enterprise certificate provider (ECP) HTTP proxy binary path'
+        ' (cert_config["libs"]["ecp_http_proxy"]) specified in enterprise'
+        ' certificate config file was not found. Cannot use mTLS with ECP if'
+        ' the ECP HTTP proxy binary does not exist. Please check the ECP'
+        ' configuration. See `gcloud topic client-certificate` to learn more'
+        ' about ECP. \nIf this error is unexpected either delete {} or'
+        ' generate a new configuration with `$'
+        ' gcloud auth enterprise-certificate-config create --help` '.format(
+            file_path
+        )
+    )
+
+  return file_path
+
+
+class ConfigType(enum.Enum):
+  ENTERPRISE_CERTIFICATE = 1
+  ON_DISK_CERTIFICATE = 2
+
+
+class _ConfigImpl(object):
+  """Represents the configurations associated with context aware access.
+
+  Both the encrypted and unencrypted certs need to be generated to support HTTP
+  API clients and gRPC API clients, respectively.
+
+  Only one instance of Config can be created for the program.
+  """
+
+  @classmethod
+  def Load(cls):
+    """Loads the context aware config."""
+    if not properties.VALUES.context_aware.use_client_certificate.GetBool():
+      return None
+
+    certificate_config_file_path = _GetCertificateConfigFile()
+    if certificate_config_file_path:
+      # The enterprise cert config file path will be used.
+      log.debug('enterprise certificate is used for mTLS')
+      return _EnterpriseCertConfigImpl(certificate_config_file_path)
+
+    log.debug('on disk certificate is used for mTLS')
+    config_path = _AutoDiscoveryFilePath()
+    # Raw cert and key
+    cert_bytes, key_bytes = SSLCredentials(config_path)
+
+    # Encrypted cert stored in a file
+    encrypted_cert_path, password = EncryptedSSLCredentials(config_path)
+    return _OnDiskCertConfigImpl(
+        config_path, cert_bytes, key_bytes, encrypted_cert_path, password
+    )
+
+  def __init__(self, config_type):
+    self.config_type = config_type
+
+
+class _EnterpriseCertConfigImpl(_ConfigImpl):
+  """Represents the configurations associated with context aware access through a enterprise certificate on TPM or OS key store."""
+
+  def __init__(self, certificate_config_file_path):
+    super(_EnterpriseCertConfigImpl, self).__init__(
+        ConfigType.ENTERPRISE_CERTIFICATE
+    )
+    self.certificate_config_file_path = certificate_config_file_path
+
+  @property
+  def use_local_proxy(self) -> bool:
+    """Returns True if the necessary conditions to use the local proxy are met."""
+    use_ecp_http_proxy = (
+        properties.VALUES.context_aware.use_ecp_http_proxy.GetBool()
+    )
+
+    return use_ecp_http_proxy
+
+
+class _OnDiskCertConfigImpl(_ConfigImpl):
+  """Represents the configurations associated with context aware access through a certificate on disk.
+
+  Both the encrypted and unencrypted certs need to be generated to support HTTP
+  API clients and gRPC API clients, respectively.
+
+  Only one instance of Config can be created for the program.
+  """
+
+  def __init__(
+      self,
+      config_path,
+      client_cert_bytes,
+      client_key_bytes,
+      encrypted_client_cert_path,
+      encrypted_client_cert_password,
+  ):
+    super(_OnDiskCertConfigImpl, self).__init__(ConfigType.ON_DISK_CERTIFICATE)
+    self.config_path = config_path
+    self.client_cert_bytes = client_cert_bytes
+    self.client_key_bytes = client_key_bytes
+    self.encrypted_client_cert_path = encrypted_client_cert_path
+    self.encrypted_client_cert_password = encrypted_client_cert_password
+    atexit.register(self.CleanUp)
+
+  def CleanUp(self):
+    """Cleanup any files or resource provisioned during config init."""
+    if self.encrypted_client_cert_path is not None and os.path.exists(
+        self.encrypted_client_cert_path
+    ):
+      try:
+        os.remove(self.encrypted_client_cert_path)
+        log.debug(
+            'unprovisioned client cert - %s', self.encrypted_client_cert_path
+        )
+      except files.Error as e:
+        log.error('failed to remove client certificate - %s', e)
+
+
+singleton_config = None
+
+
+def Config():
+  """Represents the configurations associated with context aware access."""
+  global singleton_config
+  if not singleton_config:
+    singleton_config = _ConfigImpl.Load()
+
+  return singleton_config

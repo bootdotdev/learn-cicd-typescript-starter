@@ -1,0 +1,52 @@
+release_tracks: [GA, BETA]
+help_text:
+  brief: Update the semantic governance policy engine config.
+  description: Update the semantic governance policy engine config.
+  examples: |-
+    To add or update a gateway config named `my-gateway` on the semantic
+    governance policy engine in location `us-central1`, run:
+
+      $ {command} --location=us-central1 \
+          --gateway-config=name=my-gateway,network=my-network,subnetwork=my-subnetwork,dns-zone-name=my-zone.example.com.
+arguments:
+  resource:
+    help_text: The semantic governance policy engine config.
+    spec:
+      name: location
+      collection: aiplatform.projects.locations
+      attributes:
+      - parameter_name: projectsId
+        attribute_name: project
+        help: The project containing the location.
+      - parameter_name: locationsId
+        attribute_name: location
+        help: The location of the semantic governance policy engine.
+    is_positional: false
+
+  params:
+  - arg_name: gateway-config
+    type: googlecloudsdk.command_lib.ai.semantic_governance_policies.util:gateway_config_type
+    help_text: |
+      Configuration for a single gateway.
+      The value is a comma-separated list of key-value pairs.
+      For example: `name=mygateway,network=net,subnetwork=subnet,dns-zone-name=dns`
+
+request:
+  BETA:
+    api_version: v1beta1
+  GA:
+    api_version: v1
+  collection: aiplatform.projects.locations
+  method: updateSemanticGovernancePolicyEngine
+  disable_resource_check: true
+  modify_request_hooks:
+  - googlecloudsdk.command_lib.ai.semantic_governance_policies.util:set_regional_endpoint
+  - googlecloudsdk.command_lib.ai.semantic_governance_policies.util:set_engine_name
+  - googlecloudsdk.command_lib.ai.semantic_governance_policies.util:set_engine_update
+
+update:
+  disable_auto_field_mask: true
+
+async:
+  collection: aiplatform.projects.locations.operations
+  extract_resource_result: false

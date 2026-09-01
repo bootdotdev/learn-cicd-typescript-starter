@@ -1,0 +1,68 @@
+# -*- coding: utf-8 -*-
+# Copyright 2021 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+"""Aiplatform gRPC client. This class is automatically generated."""
+
+import contextlib
+
+from googlecloudsdk.core import gapic_util
+from googlecloudsdk.generated_clients.gapic_clients import aiplatform_v1
+
+
+class GapicWrapperClient(object):
+  """Aiplatform client."""
+  types = aiplatform_v1.types
+
+  def __init__(self, credentials, **kwargs):
+    """
+    Instantiates the GapicWrapperClient for aiplatform_v1.
+
+    Args:
+      credentials: google.auth.credentials.Credentials, the credentials to use.
+      **kwargs: Additional kwargs to pass to gapic.MakeClient.
+
+    Returns:
+        GapicWrapperClient
+    """
+    self._exit_stack = contextlib.ExitStack()
+    self.credentials = credentials
+    self.prediction = gapic_util.MakeClient(
+        aiplatform_v1.services.prediction_service.client.PredictionServiceClient,
+        credentials, **kwargs)
+    self.semantic = gapic_util.MakeClient(
+        aiplatform_v1.services.semantic_governance_policy_engine_service.client.SemanticGovernancePolicyEngineServiceClient,
+        credentials, **kwargs)
+    self.semantic = gapic_util.MakeClient(
+        aiplatform_v1.services.semantic_governance_policy_service.client.SemanticGovernancePolicyServiceClient,
+        credentials, **kwargs)
+
+  def __enter__(self):
+    self._exit_stack.enter_context(self.prediction)
+    self._exit_stack.enter_context(self.semantic)
+    self._exit_stack.enter_context(self.semantic)
+    return self
+
+  def close(self):
+    if hasattr(self, '_exit_stack'):
+      self._exit_stack.close()
+
+  def __exit__(self, exc_type, exc_value, traceback):
+    self.close()
+
+  def __del__(self):
+    try:
+      self.close()
+    except Exception:
+      pass

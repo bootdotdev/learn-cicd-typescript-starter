@@ -1,0 +1,87 @@
+- release_tracks: [BETA, GA]
+  help_text:
+    brief: Update a transport.
+    description: Update a transport with the given name to a remote provider.
+    examples: |
+      To update a transport named ``mytransport'' in the ``us-east4'' region, run:
+
+      $ {command} mytransport --region=us-east4 --description="new description" --advertised-routes="10.0.0.0/8,10.1.0.0/16" --bandwidth=1G
+
+  output:
+    format: yaml
+
+  async:
+    collection: networkconnectivity.projects.locations.operations
+
+  request:
+    BETA:
+      api_version: v1beta
+    GA:
+      api_version: v1
+    collection: networkconnectivity.projects.locations.transports
+
+  arguments:
+    resource:
+      spec: !REF googlecloudsdk.command_lib.network_connectivity.resources:transport
+      help_text: Name of the Transport to be updated.
+    params:
+    - arg_name: advertised-routes
+      BETA:
+        api_field: googleCloudNetworkconnectivityV1betaTransport.advertisedRoutes
+      GA:
+        api_field: transport.advertisedRoutes
+      help_text: List of routes to advertise from the VPC `network` toward the provider.
+      metavar: CIDR_RANGE
+    - arg_name: bandwidth
+      BETA:
+        api_field: googleCloudNetworkconnectivityV1betaTransport.bandwidth
+      GA:
+        api_field: transport.bandwidth
+      help_text: Bandwidth of the transport to create. Must be a supported bandwidth on the remote profile.
+      choices:
+      - arg_value: 50M
+        enum_value: BPS_50M
+      - arg_value: 100M
+        enum_value: BPS_100M
+      - arg_value: 200M
+        enum_value: BPS_200M
+      - arg_value: 300M
+        enum_value: BPS_300M
+      - arg_value: 400M
+        enum_value: BPS_400M
+      - arg_value: 500M
+        enum_value: BPS_500M
+      - arg_value: 1G
+        enum_value: BPS_1G
+      - arg_value: 2G
+        enum_value: BPS_2G
+      - arg_value: 5G
+        enum_value: BPS_5G
+      - arg_value: 10G
+        enum_value: BPS_10G
+      - arg_value: 20G
+        enum_value: BPS_20G
+      - arg_value: 50G
+        enum_value: BPS_50G
+      - arg_value: 100G
+        enum_value: BPS_100G
+    - arg_name: description
+      BETA:
+        api_field: googleCloudNetworkconnectivityV1betaTransport.description
+      GA:
+        api_field: transport.description
+      help_text: Description of the transport.
+    - arg_name: stack-type
+      BETA:
+        api_field: googleCloudNetworkconnectivityV1betaTransport.stackType
+      GA:
+        api_field: transport.stackType
+      help_text: IP version of the routes to be exchanged.
+      choices:
+      - arg_value: ipv4-only
+      - arg_value: ipv4-ipv6
+    labels:
+      BETA:
+        api_field: googleCloudNetworkconnectivityV1betaTransport.labels
+      GA:
+        api_field: transport.labels

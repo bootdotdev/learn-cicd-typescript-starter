@@ -1,0 +1,279 @@
+- release_tracks: [ALPHA, BETA]
+  hints:
+    read_only: false
+  help_text:
+    brief: Create Flag
+    description: |-
+      Create a new feature flag resource. Flags define toggleable features or
+      configurations that can be evaluated at runtime by applications.
+    examples: |-
+      To create a simple boolean flag with a default `Disabled` state, run:
+
+          $ {command} my-feature-flag --key=enable_new_feature --flag-value-type=bool --unit-kind=my-service-unit --variants='[{"id": "Enabled", "booleanValue": true}, {"id": "Disabled", "booleanValue": false}]' --evaluation-spec='{"defaultTarget": "Disabled"}' --location=global
+
+      To create a simple boolean flag including a flag set, description, state, and the default variants and evaluation spec, run:
+
+          $ {command} beta-feature --key=beta_rollout --flag-value-type=bool --unit-kind=my-service-unit --flag-set=my-flag-set --description="A beta feature flag" --state=in-development --location=global
+
+      To create a percentage rollout (10% Enabled) using a `userID` attribute, run:
+
+          $ {command} beta-feature --key=beta_rollout --flag-value-type=bool --unit-kind=my-service-unit --variants='[{"id": "Enabled", "booleanValue": true}, {"id": "Disabled", "booleanValue": false}]' --evaluation-spec='{"allocations": [{"id": "p10", "randomizedOn": "userID", "slots": [{"variant": "Disabled", "weight": 90}, {"variant": "Enabled", "weight": 10}]}], "defaultTarget": "p10", "attributes": ["projects/my-project/locations/global/flagAttributes/id-attr"]}' --location=global
+
+      To create a flag with progressive rollout using dynamic allocations, run:
+
+          $ {command} beta-feature --key=beta_rollout --flag-value-type=bool --unit-kind=my-service-unit --variants='[{"id": "Enabled", "booleanValue": true}, {"id": "Disabled", "booleanValue": false}]' --evaluation-spec='{"dynamicAllocations": [{"id": "p10", "randomizedOn": "userID", "initialVariant": "Disabled", "finalVariant": "Enabled"}], "defaultDynamicAllocation": "p10"}' --location=global
+
+      To create an integer flag for a retry limit, run:
+
+          $ {command} retry-limit --key=max_retries --flag-value-type=int --unit-kind=my-service-unit --variants='[{"id": "Low", "integerValue": 3}, {"id": "High", "integerValue": 10}]' --evaluation-spec='{"defaultTarget": "Low"}' --location=global
+
+      To create a double flag for a discount percentage, run:
+
+          $ {command} discount-percentage --key=discount_percentage --flag-value-type=double --unit-kind=my-service-unit --variants='[{"id": "Zero", "doubleValue": 0.0}, {"id": "TenPercent", "doubleValue": 0.1}, {"id": "TwentyPercent", "doubleValue": 0.2}]' --evaluation-spec='{"defaultTarget": "Zero"}' --location=global
+
+      To create a string flag for a theme color, run:
+
+          $ {command} header-color --key=header_color --flag-value-type=string --unit-kind=my-service-unit --variants='[{"id": "Blue", "stringValue": "blue"}, {"id": "Red", "stringValue": "red"}]' --evaluation-spec='{"defaultTarget": "Blue"}' --location=global
+
+      To create a flag with complex targeting rules using a CEL expression and attributes, run:
+
+          $ {command} beta-feature --key=beta_enabled --flag-value-type=bool --unit-kind=my-service-unit --variants='[{"id": "Enabled", "booleanValue": true}, {"id": "Disabled", "booleanValue": false}]' --evaluation-spec='{"rules": [{"id": "internal-testers", "condition": "email.endsWith(\"@google.com\")", "target": "Enabled"}], "defaultTarget": "Disabled", "attributes": ["projects/my-project/locations/global/flagAttributes/email-attr"]}' --location=global
+
+  arguments:
+    params:
+    - help_text: |-
+        ID of the Flag:
+
+          "projects/{project}/locations/{location}/flags/{flag_id}"
+
+        This follows the standard Google Cloud naming scheme (URI).
+      is_positional: true
+      request_id_field: flagId
+      resource_spec: !REF googlecloudsdk.command_lib.saas_runtime.resources:flag
+      required: true
+
+    - arg_name: key
+      api_field: flag.key
+      help_text: |-
+        Flag key used in client runtime evaluation (required).
+        Max length: 256 bytes.
+      is_positional: false
+      required: true
+      repeated: false
+
+    - arg_name: flag-value-type
+      api_field: flag.flagValueType
+      help_text: |-
+        The type of the flag's value, e.g. BOOLEAN (required).
+      is_positional: false
+      required: true
+      repeated: false
+      choices:
+      - arg_value: bool
+        enum_value: FLAG_VALUE_TYPE_BOOLEAN
+        help_text: |-
+          The flag's value type is a boolean.
+      - arg_value: int
+        enum_value: FLAG_VALUE_TYPE_INTEGER
+        help_text: |-
+          The flag's value type is an integer.
+      - arg_value: string
+        enum_value: FLAG_VALUE_TYPE_STRING
+        help_text: |-
+          The flag's value type is a string.
+      - arg_value: double
+        enum_value: FLAG_VALUE_TYPE_DOUBLE
+        help_text: |-
+          The flag's value type is a double.
+
+    - arg_name: evaluation-spec
+      api_field: flag.evaluationSpec
+      help_text: |-
+        Specification of how the Flag value should be evaluated.
+      is_positional: false
+      required: false
+      repeated: false
+      spec:
+      - api_field: defaultTarget
+        help_text: |-
+          Default variant for the flag.
+      - api_field: defaultDynamicAllocation
+        help_text: |-
+          The ID of a dynamic allocation to use as the default.
+      - api_field: dynamicAllocations
+        help_text: |-
+          A list of dynamic allocations.
+        spec:
+        - api_field: id
+          help_text: |-
+            Id of the dynamic allocation.
+            Max length: 128 bytes.
+        - api_field: randomizedOn
+          help_text: |-
+            Key of the context attribute that is used for traffic splitting.
+        - api_field: description
+          help_text: |-
+            A description of the dynamic allocation.
+            Max length: 500 bytes.
+        - api_field: initialVariant
+          help_text: |-
+            Initial variant to return for this allocation when not fully rolled out.
+        - api_field: finalVariant
+          help_text: |-
+            Final variant to return for this allocation when fully rolled out.
+        - api_field: salt
+          help_text: |-
+            Salt for hash generation.
+      - api_field: allocations
+        help_text: |-
+          A list of allocations.
+        spec:
+        - api_field: id
+          help_text: |-
+            Id of the allocation.
+            Max length: 128 bytes.
+        - api_field: randomizedOn
+          help_text: |-
+            Key of the context attribute that is used for traffic splitting.
+        - api_field: description
+          help_text: |-
+            A description of the allocation.
+            Max length: 500 bytes.
+        - api_field: slots
+          help_text: |-
+            Slots defines the weighted distribution of variants.
+          spec:
+          - api_field: variant
+            help_text: |-
+              Variant of the allocation slot.
+          - api_field: weight
+            help_text: |-
+              Weight defines the proportion of traffic to allocate to the variant,
+              relative to other slots in the same allocation.
+      - api_field: rules
+        help_text: |-
+          Define the logic for evaluating the flag against a given context.
+          The rules are evaluated sequentially in their specified order.
+        spec:
+        - api_field: condition
+          help_text: |-
+            A Common Expression Language (CEL cel.dev) expression evaluated against the evaluation context.
+            For example: `plan == "premium" && country == "DE"`.
+        - api_field: id
+          help_text: |-
+            A unique identifier for the rule.
+        - api_field: target
+          help_text: |-
+            The ID of the variant to return if the condition evaluates to true.
+      - api_field: attributes
+        help_text: |-
+          Names of the context attributes that are used in the evaluation rules and allocations.
+
+    - arg_name: variants
+      api_field: flag.variants
+      help_text: |-
+        A list of variants.
+        Variant is an identifier for a value (name assigned to a value).
+      is_positional: false
+      required: false
+      repeated: true
+      spec:
+      - api_field: id
+        help_text: |-
+          Id of the variant.
+          Max length: 128 bytes.
+      - api_field: description
+        help_text: |-
+          A description of the variant.
+          Max length: 500 bytes.
+      - api_field: booleanValue
+        help_text: |-
+          Value is a single boolean flag value for the variant.
+      - api_field: integerValue
+        help_text: |-
+          Value is a single integer flag value for the variant.
+      - api_field: stringValue
+        help_text: |-
+          Value is a single string flag value for the variant.
+          Max length: 500 bytes.
+      - api_field: doubleValue
+        help_text: |-
+          Value is a single double flag value for the variant.
+
+    - arg_name: unit-kind
+      help_text: |-
+        Reference to the UnitKind that can consume this Flag.
+      is_positional: false
+      resource_spec: !REF googlecloudsdk.command_lib.saas_runtime.resources:unit_kind
+      resource_method_params:
+        flag.unitKind: '{__relative_name__}'
+      required: true
+      repeated: false
+
+    - arg_name: flag-set
+      api_field: flag.flagSet
+      help_text: |-
+        Flag set this flag belongs to.
+      is_positional: false
+      required: false
+      repeated: false
+
+    - arg_name: description
+      api_field: flag.description
+      required: false
+      help_text: |-
+        A description of the flag.
+        Max length: 500 bytes.
+      is_positional: false
+
+    - arg_name: state
+      api_field: flag.state
+      help_text: |-
+        Current state of the flag.
+      is_positional: false
+      required: false
+      repeated: false
+      choices:
+      - arg_value: in-development
+        enum_value: FLAG_STATE_IN_DEVELOPMENT
+        help_text: |-
+          The flag is currently in development.
+      - arg_value: active
+        enum_value: FLAG_STATE_ACTIVE
+        help_text: |-
+          The flag is in the active state.
+      - arg_value: sunsetting
+        enum_value: FLAG_STATE_SUNSETTING
+        help_text: |-
+          The flag is in the sunsetting state, indicating it is being phased out.
+      - arg_value: cleanup
+        enum_value: FLAG_STATE_CLEANUP
+        help_text: |-
+          The flag is in the cleanup state and ready to be deleted.
+
+    - arg_name: labels
+      api_field: flag.labels
+      required: false
+      repeated: true
+      help_text: |-
+        The labels on the resource, which can be used for categorization.
+      spec:
+      - api_field: key
+      - api_field: value
+
+    - arg_name: annotations
+      api_field: flag.annotations
+      required: false
+      repeated: true
+      help_text: |-
+        Unstructured key-value map stored with a resource that may be set by
+        external tools to store and retrieve arbitrary metadata. Annotations
+        are not queryable and should be preserved when modifying objects.
+      spec:
+      - api_field: key
+      - api_field: value
+
+  request:
+    api_version: v1beta1
+    collection:
+    - saasservicemgmt.projects.locations.flags

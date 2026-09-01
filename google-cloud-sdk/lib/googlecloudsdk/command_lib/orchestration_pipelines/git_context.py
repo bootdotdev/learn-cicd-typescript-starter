@@ -1,0 +1,372 @@
+# -*- coding: utf-8 -*- #
+# Copyright 2026 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Git context management for orchestration pipelines."""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+import hashlib
+import pathlib
+import subprocess
+
+from googlecloudsdk.core import exceptions
+from googlecloudsdk.core import log
+
+ENV_PACK_FILE = "environment.tar.gz"
+
+
+class GitError(exceptions.Error):
+  """Exception for errors during git operations."""
+  pass
+
+
+class SafeCommitSha:
+  """A helper class to represent a commit SHA that might be dirty."""
+
+  def __init__(
+      self,
+      git_context_provider: Callable[[], GitContext],
+      enforce_clean: bool,
+  ):
+    self._git_context_provider = git_context_provider
+    self._git_context = None
+    self._enforce_clean = enforce_clean
+
+  @staticmethod
+  def CreateLazy(
+      enforce_clean: bool,
+      bundle_path: pathlib.Path | None = None,
+      is_local: bool = False,
+  ) -> SafeCommitSha:
+    """Creates a SafeCommitSha that lazily instantiates GitContext."""
+    return SafeCommitSha(
+        lambda: GitContext(bundle_path=bundle_path, is_local=is_local),
+        enforce_clean=enforce_clean,
+    )
+
+  def _GetGitContext(self):
+    if self._git_context is None:
+      self._git_context = self._git_context_provider()
+    return self._git_context
+
+  def __str__(self):
+    """Returns the SHA string, checking for dirty state if necessary."""
+    ctx = self._GetGitContext()
+    if self._enforce_clean:
+      ctx.EnforceClean()
+      if not ctx.commit_sha:
+        raise GitError(
+            "--local mode generates a version hash that cannot be used "
+            "for COMMIT_SHA. Please provide COMMIT_SHA explicitly."
+        )
+    result = ctx.commit_sha or ctx.version or "UNKNOWN"
+    return str(result)
+
+  def __repr__(self):
+    return self.__str__()
+
+
+class GitContext:
+  """Manages git status and commit SHA."""
+
+  def __init__(self, override_version=None, bundle_path=None, is_local=False):
+    self._override_version = override_version
+    self.is_explicit_version = bool(override_version)
+    self._bundle_path = bundle_path
+    self._is_local = is_local
+    self._version = None
+    self._commit_sha = None
+    self._is_dirty = False
+    self._changes = []
+    self._Load()
+
+  def _Load(self):
+    """Loads git status and SHA."""
+
+    if self.is_explicit_version:
+      self._version = self._override_version
+      self._commit_sha = self._override_version
+      self._is_dirty = False
+      return
+
+    if self._is_local:
+      self._commit_sha = None
+      content_hash = self._GetContentHash()
+      self._version = "local-{}".format(content_hash)
+      self._is_dirty = False
+      return
+
+    try:
+      self._changes = self._GetUncommittedChanges()
+      self._is_dirty = bool(self._changes)
+    except (subprocess.CalledProcessError, FileNotFoundError):
+      # No git repo or command failed -> Ignore
+      self._is_dirty = False
+
+    try:
+      if self._bundle_path:
+        try:
+          computed_sha = subprocess.check_output(
+              ["git", "rev-parse", f"HEAD:{self._bundle_path.name}"],
+              text=True,
+              stderr=subprocess.DEVNULL,
+          ).strip()
+          self._version = computed_sha
+          self._commit_sha = computed_sha
+          return
+        except subprocess.CalledProcessError:
+          pass
+
+      computed_sha = subprocess.check_output(
+          ["git", "rev-parse", "HEAD"],
+          text=True,
+          stderr=subprocess.DEVNULL,
+      ).strip()
+      self._version = computed_sha
+      self._commit_sha = computed_sha
+    except (subprocess.CalledProcessError, FileNotFoundError):
+      self._version = None
+      self._commit_sha = None
+
+  def _GetUncommittedChanges(self):
+    """Returns a list of uncommitted changes, or empty list if clean."""
+    try:
+      status_output = subprocess.check_output(
+          ["git", "status", "--porcelain"], text=True
+      ).strip()
+      if status_output:
+        lines = status_output.splitlines()
+        ignored_patterns = [".pyc", "__pycache__", ENV_PACK_FILE]
+        real_changes = [
+            l for l in lines if not any(p in l for p in ignored_patterns)
+        ]
+        return real_changes
+      return []
+    except subprocess.CalledProcessError:
+      return []
+
+  def GetSafeCommitSha(self, enforce_clean: bool) -> SafeCommitSha:
+    return SafeCommitSha(
+        lambda: self,
+        enforce_clean=enforce_clean,
+    )
+
+  def EnforceClean(self):
+    """Enforces that the working copy is clean."""
+    if not self._is_dirty:
+      return
+
+    real_changes = self._GetUncommittedChanges()
+    if real_changes:
+      formatted_changes = "\n".join([f"  - {l}" for l in real_changes])
+      msg = "Uncommitted changes detected!\n%s" % formatted_changes
+      log.error(msg)
+      raise GitError(
+          "Please commit or stash changes before deploying."
+      )
+
+  @property
+  def version(self):
+    return self._version
+
+  @property
+  def commit_sha(self):
+    return self._commit_sha
+
+  def CalculateVersionId(self):
+    """Calculates the version ID based on SHA."""
+    self.EnforceClean()
+    version_str = self._version
+    if not version_str:
+      raise GitError(
+          "Could not determine git version ID. "
+          "Git history not found. "
+          "Ensure you are inside an initialized repository."
+      )
+
+    return version_str
+
+  def _GetContentHash(self):
+    """Generates a deterministic hash based strictly on source file contents."""
+    bundle_path = self._bundle_path
+    if bundle_path is None:
+      bundle_path = pathlib.Path.cwd()
+    ignored_patterns = {
+        "__pycache__",
+        ".pyc",
+        ".pyo",
+        ".git",
+        ".DS_Store",
+        ENV_PACK_FILE,
+    }
+
+    content_hashes = []
+    for path in bundle_path.rglob("*"):
+      if any(part in ignored_patterns for part in path.parts):
+        continue
+
+      if path.is_file():
+        if path.name.startswith(".") or path.name.endswith(".log"):
+          continue
+        try:
+          file_content = path.read_bytes()
+          file_hash = hashlib.sha256(file_content).hexdigest()
+          content_hashes.append(file_hash)
+        except (IOError, OSError, PermissionError):
+          continue
+
+    content_hashes.sort()
+
+    final_hasher = hashlib.sha256()
+    for h in content_hashes:
+      final_hasher.update(h.encode())
+
+    return final_hasher.hexdigest()[:12]
+
+  def CheckAncestry(self, remote_sha):
+    """Verifies that the remote version is an ancestor of the local version.
+
+    Args:
+      remote_sha: The git commit hash of the remote version.
+
+    Returns:
+      True if the remote_sha is an ancestor of local_sha, or if the check is
+      skipped (e.g., in 'dev' environment or if remote_sha is not found). False
+      otherwise.
+    """
+    if not remote_sha:
+      return True
+
+    if str(remote_sha).startswith("local-"):
+      log.status.Print(
+          "Initial non-local deployment detected; skipping ancestry check."
+      )
+      return True
+
+    if self._is_local:
+      log.status.Print("Local deployment; skipping ancestry check.")
+      return True
+
+    try:
+      subprocess.check_call(
+          ["git", "cat-file", "-t", remote_sha],
+      )
+    except subprocess.CalledProcessError:
+      log.error("Remote version %s not found in local git history.", remote_sha)
+      return False
+
+    try:
+      subprocess.check_call([
+          "git",
+          "merge-base",
+          "--is-ancestor",
+          remote_sha,
+          self._version,
+      ])
+      return True
+    except subprocess.CalledProcessError:
+      log.error(
+          "REGRESSION BLOCKED: The remote version (%s) is ahead of your local"
+          " version (%s). Please pull the latest changes before deploying.",
+          remote_sha,
+          self._version,
+      )
+      return False
+
+  def ValidateAncestryOrRaise(self, remote_version, bypass=False):
+    """Validates that the remote version in the manifest is safe to overwrite.
+
+    Args:
+      remote_version: The git commit hash of the remote version.
+      bypass: If True, skips the ancestry check (rollbacks).
+
+    Returns:
+        The remote_version string if safe (or None if no manifest exists).
+
+    Raises:
+        GitError: If the remote version is ahead of the local version.
+    """
+    if not remote_version:
+      return None
+
+    if bypass:
+      log.status.Print(
+          f"Bypassing ancestry check for remote version {remote_version}."
+      )
+      return remote_version
+
+    if not self.CheckAncestry(remote_version):
+      raise GitError(
+          f"REGRESSION BLOCKED: The remote version ({remote_version}) "
+          "is ahead of or divergent from your local version.\n"
+          "Please 'git pull' the latest changes before deploying."
+      )
+    return remote_version
+
+  def GetDeploymentMetadata(self, version_id):
+    """Retrieves Git deployment metadata.
+
+    Args:
+      version_id: The version ID of the deployment (typically a commit SHA).
+
+    Returns:
+      A dictionary containing git repository, branch, and commit SHA, or None
+      if the deployment is local.
+    """
+    if self._is_local:
+      return None
+
+    git_repo = "unknown"
+    git_branch = "unknown"
+
+    try:
+      git_branch = subprocess.check_output(
+          ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+          text=True,
+          stderr=subprocess.DEVNULL,
+      ).strip()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+      pass
+
+    remote_name = "origin"
+    if git_branch != "unknown":
+      try:
+        configured_remote = subprocess.check_output(
+            ["git", "config", "--get", f"branch.{git_branch}.remote"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+        if configured_remote:
+          remote_name = configured_remote
+      except (subprocess.CalledProcessError, FileNotFoundError):
+        pass
+
+    try:
+      git_repo = subprocess.check_output(
+          ["git", "remote", "get-url", remote_name],
+          text=True,
+          stderr=subprocess.DEVNULL,
+      ).strip()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+      pass
+
+    return {
+        "origination": "GIT_CI_CD",
+        "deploymentDetails": {
+            "gitRepo": git_repo,
+            "gitBranch": git_branch,
+            "commitSha": str(version_id),
+        },
+    }

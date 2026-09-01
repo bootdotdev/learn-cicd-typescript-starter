@@ -1,0 +1,43 @@
+# -*- coding: utf-8 -*- #
+# Copyright 2025 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Cloud Vector Search collections API utilities."""
+
+
+from googlecloudsdk.api_lib.vector_search import util
+from googlecloudsdk.calliope import base
+
+
+class DataObjectsClient(object):
+  """Client for data objects service in the Vector Search API."""
+
+  def __init__(self, release_track=base.ReleaseTrack.BETA):
+    self.release_track = release_track
+    self.api_version = util.VERSION_MAP.get(release_track)
+    self.client = util.GetClientInstance(release_track)
+    self.messages = util.GetMessagesModule(release_track)
+    self.service = self.client.projects_locations_collections_dataObjects
+
+  def GetMessage(self, message_name):
+    """Returns the message for the given release track."""
+    return util.GetMessage(self.messages, message_name, self.release_track)
+
+  def GetMessageName(self, message_name):
+    """Returns the full message name for the given release track."""
+    return util.GetMessageName(message_name, self.release_track)
+
+  def GetRequestField(self, req_message_name):
+    """Returns the field name in a request wrapper for the given message."""
+    full_name = self.GetMessageName(req_message_name)
+    return full_name[0].lower() + full_name[1:]

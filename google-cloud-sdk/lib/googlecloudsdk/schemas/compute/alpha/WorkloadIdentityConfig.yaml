@@ -1,0 +1,16 @@
+$schema: "http://json-schema.org/draft-06/schema#"
+
+title: compute alpha WorkloadIdentityConfig export schema
+description: A gcloud export/import command YAML validation schema.
+type: object
+additionalProperties: false
+properties:
+  identity:
+    description: The identity of the instance.
+    type: string
+  identityCertificateEnabled:
+    description: Whether to enable identity certificate.
+    type: boolean
+  identityType:
+    description: The identity type of the instance.
+    type: enum

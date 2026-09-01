@@ -1,0 +1,268 @@
+# -*- coding: utf-8 -*- #
+# Copyright 2018 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Gather stage/condition information for any important objects here."""
+
+
+from googlecloudsdk.core.console import progress_tracker
+
+READY = 'Ready'
+SERVICE_IAM_POLICY_SET = 'IamPolicySet'
+SERVICE_IAP_ENABLE = 'IapEnable'
+SERVICE_ROUTES_READY = 'RoutesReady'
+SERVICE_CONFIGURATIONS_READY = 'ConfigurationsReady'
+MULTI_REGION_READY_PREFIX = 'MultiRegionReady/'
+BUILD_READY = 'BuildReady'
+UPLOAD_SOURCE = 'UploadSource'
+CREATE_REPO = 'CreateRepo'
+VALIDATE_SERVICE = 'ValidateService'
+SYNC_RULES = 'SyncRules'
+FETCH_PROJECT_DETAILS = 'FetchProjectDetails'
+ESTABLISH_CONNECTION = 'EstablishConnection'
+DOMAIN_MAPPING_READY = 'DomainMappingReady'
+RESOURCES_AVAILABLE = 'ResourcesAvailable'
+
+_STARTED = 'Started'
+_COMPLETED = 'Completed'
+_CONTAINER_READY = 'ContainerReady'
+_RUNNING = 'Running'
+
+
+def _CreateRepoStage():
+  return progress_tracker.Stage(
+      'Creating Container Repository...', key=CREATE_REPO
+  )
+
+
+def _ValidateServiceStage():
+  return progress_tracker.Stage(
+      'Validating configuration...', key=VALIDATE_SERVICE
+  )
+
+
+def _UploadSourceStage():
+  return progress_tracker.Stage('Uploading sources...', key=UPLOAD_SOURCE)
+
+
+def _BuildContainerStage():
+  return progress_tracker.Stage('Building Container...', key=BUILD_READY)
+
+
+def _NewRoutingTrafficStage():
+  return progress_tracker.Stage('Routing traffic...', key=SERVICE_ROUTES_READY)
+
+
+# TODO(b/322180968): Once Worker API is ready, replace 'key' to Worker specific
+# condition.
+def _NewSplittingInstanceStage():
+  return progress_tracker.Stage(
+      'Splitting instances...', key=SERVICE_ROUTES_READY
+  )
+
+
+def UpdateTrafficStages():
+  return [_NewRoutingTrafficStage()]
+
+
+def UpdateInstanceSplitStages():
+  return [_NewSplittingInstanceStage()]
+
+
+# Because some terminals cannot update multiple lines of output simultaneously,
+# the order of conditions in this dictionary should match the order in which we
+# expect cloud run resources to complete deployment.
+LOCAL_BUILD_STAGE_KEY = 'LocalBuild'
+
+
+def _LocalBuildStage():
+  return progress_tracker.Stage(
+      'Building application locally...',
+      key=LOCAL_BUILD_STAGE_KEY,
+  )
+
+
+def ServiceStages(
+    include_iam_policy_set=False,
+    include_route=True,
+    include_validate_service=False,
+    include_upload_source=False,
+    include_build=False,
+    include_create_repo=False,
+    include_create_revision=True,
+    include_iap=False,
+    include_domain_mapping=False,
+    regions_list=None,
+    include_local_build=False,
+):
+  """Return the progress tracker Stages for conditions of a Service."""
+  stages = []
+  if include_local_build:
+    stages.append(_LocalBuildStage())
+  if include_create_repo:
+    stages.append(_CreateRepoStage())
+  if include_validate_service:
+    stages.append(_ValidateServiceStage())
+  if include_upload_source:
+    stages.append(_UploadSourceStage())
+  if include_build:
+    stages.append(_BuildContainerStage())
+  if include_create_revision:
+    if not regions_list:
+      stages.append(
+          progress_tracker.Stage(
+              'Creating Revision...', key=SERVICE_CONFIGURATIONS_READY
+          )
+      )
+    else:
+      for region in regions_list:
+        stages.append(
+            progress_tracker.Stage(
+                'Creating Revision in region: ' + region,
+                key=MULTI_REGION_READY_PREFIX + region,
+            )
+        )
+  if include_route and not regions_list:
+    stages.append(_NewRoutingTrafficStage())
+  if include_iam_policy_set:
+    stages.append(
+        progress_tracker.Stage(
+            'Setting IAM Policy...', key=SERVICE_IAM_POLICY_SET
+        )
+    )
+  if include_iap:
+    stages.append(
+        progress_tracker.Stage(
+            'Setting IAP service agent...', key=SERVICE_IAP_ENABLE
+        )
+    )
+  if include_domain_mapping:
+    stages.append(
+        progress_tracker.Stage(
+            'Creating domain mapping...', key=DOMAIN_MAPPING_READY
+        )
+    )
+  return stages
+
+
+def ServiceDependencies(regions_list):
+  """Dependencies for the Service resource, for passing to ConditionPoller."""
+  if regions_list:
+    return {
+        MULTI_REGION_READY_PREFIX + region: {SERVICE_CONFIGURATIONS_READY}
+        for region in regions_list
+    }
+  return {SERVICE_ROUTES_READY: {SERVICE_CONFIGURATIONS_READY}}
+
+
+def JobStages(
+    execute_now=False,
+    include_completion=False,
+    include_build=False,
+    include_create_repo=False,
+):
+  """Returns the list of progress tracker Stages for Jobs."""
+  stages = []
+  if include_create_repo:
+    stages.append(_CreateRepoStage())
+  if include_build:
+    stages.append(_UploadSourceStage())
+    stages.append(_BuildContainerStage())
+  if execute_now:
+    stages += ExecutionStages(include_completion)
+  return stages
+
+
+def ExecutionStages(include_completion=False):
+  """Returns the list of progress tracker Stages for Executions."""
+  stages = [
+      progress_tracker.Stage(
+          'Provisioning resources...', key=RESOURCES_AVAILABLE
+      )
+  ]
+  if include_completion:
+    stages.append(progress_tracker.Stage('Starting execution...', key=_STARTED))
+    # Normally the last terminal condition (e.g. Ready or in this case
+    # Completed) wouldn't be included as a stage since it gates the entire
+    # progress tracker. But in this case we want to include it so we can show
+    # updates on this stage while the job is running.
+    stages.append(
+        progress_tracker.Stage('Running execution...', key=_COMPLETED)
+    )
+  return stages
+
+
+def ExecutionDependencies():
+  return {_STARTED: {RESOURCES_AVAILABLE}, _COMPLETED: {_STARTED}}
+
+
+def InstanceDependencies():
+  """Dependencies for the Instance resource, for passing to ConditionPoller."""
+  return {
+      _RUNNING: {RESOURCES_AVAILABLE},
+      RESOURCES_AVAILABLE: {_CONTAINER_READY},
+  }
+
+
+def InstanceStages(
+    include_build=False,
+    include_create_repo=False,
+):
+  """Returns the list of progress tracker Stages for Instances."""
+  stages = []
+  if include_create_repo:
+    stages.append(_CreateRepoStage())
+  if include_build:
+    stages.append(_UploadSourceStage())
+    stages.append(_BuildContainerStage())
+  stages.append(
+      progress_tracker.Stage('Importing container...', key=_CONTAINER_READY)
+  )
+  stages.append(
+      progress_tracker.Stage(
+          'Provisioning resources...', key=RESOURCES_AVAILABLE
+      )
+  )
+  stages.append(progress_tracker.Stage('Starting instance...', key=_RUNNING))
+  return stages
+
+
+def WorkerPoolStages(
+    include_build=False,
+    include_create_repo=False,
+    include_create_revision=True,
+):
+  """Return the progress tracker Stages for conditions of a Worker Pool."""
+  stages = []
+  if include_create_repo:
+    stages.append(_CreateRepoStage())
+  if include_build:
+    stages.append(_UploadSourceStage())
+    stages.append(_BuildContainerStage())
+  if include_create_revision:
+    stages.append(progress_tracker.Stage('Creating Revision...', key=READY))
+  return stages
+
+
+def SyncStages():
+  """Return the progress tracker Stages for conditions of a Dev Sync session."""
+  return [
+      progress_tracker.Stage('Generating sync rules...', key=SYNC_RULES),
+      progress_tracker.Stage(
+          'Fetching Project details...', key=FETCH_PROJECT_DETAILS
+      ),
+      progress_tracker.Stage(
+          'Establishing SSH connection to the container...',
+          key=ESTABLISH_CONNECTION,
+      ),
+  ]

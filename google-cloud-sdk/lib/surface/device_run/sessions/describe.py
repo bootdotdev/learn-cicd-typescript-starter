@@ -1,0 +1,111 @@
+# -*- coding: utf-8 -*- #
+# Copyright 2026 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Command to describe a Device Run session."""
+
+from googlecloudsdk.api_lib import device_run
+from googlecloudsdk.calliope import base
+from googlecloudsdk.command_lib.device_run import reports
+from googlecloudsdk.command_lib.device_run import resource_args
+from googlecloudsdk.core import log
+
+
+@base.UniverseCompatible
+@base.ReleaseTracks(base.ReleaseTrack.ALPHA, base.ReleaseTrack.BETA)
+class Describe(base.DescribeCommand):
+  """Describe a Device Run session."""
+
+  @staticmethod
+  def Args(parser):
+    resource_args.AddSessionResourceArg(parser, 'describe')
+    parser.display_info.AddFormat(
+        'table(job_name:label="JOB NAME", '
+        'execution_name:label="EXECUTION NAME", '
+        'result:label="EXECUTION RESULT")'
+    )
+    parser.add_argument(
+        '--full',
+        action='store_true',
+        default=False,
+        help='Display full session details instead of the simplified summary.',
+    )
+
+  def Run(self, args):
+    session_ref = args.CONCEPTS.session.Parse()
+    client = device_run.SessionsClient(api_version='v1alpha')
+    session = client.Get(session_ref)
+
+    session_id = session_ref.Name()
+    report = session.sessionReport
+    status = report.status if report else None
+    status_type = (
+        str(status.statusType) if status and status.statusType else 'UNKNOWN'
+    )
+
+    if args.full:
+      if not args.IsSpecified('format'):
+        args.format = 'yaml'
+      return session
+
+    if status_type != 'DONE':
+      log.status.Print(f'Session [{session_id}] status is [{status_type}].')
+      if status_type == 'RUNNING' and status.progressMessages:
+        log.status.Print(status.progressMessages[-1])
+      return None
+
+    result_type = (
+        report.result.resultType
+        if report and report.result
+        else 'UNKNOWN'
+    )
+    rows = reports.ExtractSessionReportRows(report)
+
+    log.status.Print(
+        f'Session [{session_id}] finished with result [{result_type}].'
+    )
+
+    if (
+        session.sessionConfig
+        and session.sessionConfig.outputDirectoryConfig
+        and session.sessionConfig.outputDirectoryConfig.gcsOutputDirectory
+        and session.sessionConfig.outputDirectoryConfig.gcsOutputDirectory.path
+    ):
+      gcs_path = (
+          session.sessionConfig.outputDirectoryConfig.gcsOutputDirectory.path
+      )
+      if gcs_path.startswith('gs://'):
+        gcs_path = gcs_path[5:]
+      gcs_path = gcs_path.rstrip('/')
+      log.status.Print(
+          f'Result files are stored at'
+          f' [https://console.cloud.google.com/storage/browser/{gcs_path}/{session_id}/].'
+      )
+
+    return rows
+
+
+Describe.detailed_help = {
+    'DESCRIPTION':
+        'Describe a Device Run session.',
+    'EXAMPLES':
+        """\
+To describe a session named `my-session` in location `us-central1`, run:
+
+  $ {command} my-session --location=us-central1
+
+To display full details of a session, run:
+
+  $ {command} my-session --location=us-central1 --full
+""",
+}

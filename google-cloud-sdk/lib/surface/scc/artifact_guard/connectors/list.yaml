@@ -1,0 +1,26 @@
+release_tracks: [ALPHA]
+
+help_text:
+  brief: List artifact guard connectors.
+  description: |
+    List artifact guard connectors for a given parent.
+  examples: |
+    To list connectors for `organizations/123/locations/global`:
+      $ {command} organizations/123/locations/global
+    To list connectors for `projects/456/locations/global`:
+      $ {command} projects/456/locations/global
+
+request:
+  api_version: v1alpha
+  method: list
+  collection:
+  - artifactscanguard.organizations.locations.connectors
+  - artifactscanguard.projects.locations.connectors
+
+arguments:
+  resource:
+    arg_name: parent
+    spec: !REF googlecloudsdk.command_lib.scc.resources:organization_or_project_location
+    help_text: |
+      The parent resource to list connectors for. Format: organizations/{organization}/locations/{location} or projects/{project}/locations/{location}
+    is_positional: true

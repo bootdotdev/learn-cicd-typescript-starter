@@ -1,0 +1,66 @@
+# -*- coding: utf-8 -*- #
+# Copyright 2023 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Utilities for GCS long-running operations."""
+
+
+import re
+
+from googlecloudsdk.command_lib.storage import errors
+
+
+_BUCKET_OPERATION_NAME_REGEX = r'projects/.+/buckets/(?P<bucket>.+)'
+_BUCKET_AND_ID_OPERATION_NAME_REGEX = (
+    _BUCKET_OPERATION_NAME_REGEX + r'/operations/(?P<id>.+)'
+)
+_LOCATION_OPERATION_NAME_REGEX = r'projects/(?P<project>[^/]+)/locations/(?P<location>[^/]+)/operations/(?P<id>.+)'
+_LOCATION_PARENT_REGEX = (
+    r'projects/(?P<project>[^/]+)/locations/(?P<location>[^/]+)/operations$'
+)
+
+
+def is_location_operations_resource(operation_name):
+  """Returns True if the operation name is location-scoped."""
+  return re.match(_LOCATION_OPERATION_NAME_REGEX, operation_name) is not None
+
+
+def is_location_parent_resource(resource_name):
+  """Returns True if the resource name is a location (parent of operations)."""
+  return re.match(_LOCATION_PARENT_REGEX, resource_name) is not None
+
+
+def get_operation_bucket_from_name(operation_name):
+  """Extracts operation ID from user input of operation name or ID."""
+  m = re.match(_BUCKET_OPERATION_NAME_REGEX, operation_name)
+  try:
+    return m.group('bucket')
+  except AttributeError:
+    raise errors.Error(
+        'Invalid operation name format. Expected: {} Received: {}'.format(
+            _BUCKET_OPERATION_NAME_REGEX, operation_name
+        )
+    )
+
+
+def get_operation_bucket_and_id_from_name(operation_name):
+  """Extracts operation ID from user input of operation name or ID."""
+  m = re.match(_BUCKET_AND_ID_OPERATION_NAME_REGEX, operation_name)
+  try:
+    return m.group('bucket'), m.group('id')
+  except AttributeError:
+    raise errors.Error(
+        'Invalid operation name format. Expected: {} Received: {}'.format(
+            _BUCKET_AND_ID_OPERATION_NAME_REGEX, operation_name
+        )
+    )

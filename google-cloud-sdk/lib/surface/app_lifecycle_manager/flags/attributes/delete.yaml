@@ -1,0 +1,37 @@
+- release_tracks: [ALPHA, BETA]
+  hints:
+    read_only: false
+  help_text:
+    brief: Delete Flag Attribute
+    description: |-
+      Delete a Flag Attribute resource.
+
+      This operation is permanent. To prevent evaluation errors in production, the
+      attribute MUST be removed from all active Flag evaluation specifications before
+      it is deleted.
+
+      The safe deletion workflow is:
+
+        1. Identify all flags that reference this attribute in their `evaluation-spec`.
+        2. Remove the attribute reference from those flags using `flags update` or delete the flags.
+        3. Execute a `Rollout` for any affected flags to ensure the updated configuration is deployed to all units.
+        4. Run this `delete` command to permanently remove the attribute definition.
+    examples: |-
+      To delete a Flag Attribute named `user-id-attr` in the `global` location, run:
+
+          $ {command} user-id-attr --location=global
+
+      To delete a Flag Attribute using a fully qualified resource name (useful for automation), run:
+
+          $ {command} projects/my-project/locations/global/flagAttributes/user-id-attr
+  arguments:
+    params:
+    - help_text: |-
+        Flag Attribute ID of the Flag Attribute to delete.
+      is_positional: true
+      resource_spec: !REF googlecloudsdk.command_lib.saas_runtime.resources:flag_attribute
+      required: true
+  request:
+    api_version: v1beta1
+    collection:
+    - saasservicemgmt.projects.locations.flagAttributes

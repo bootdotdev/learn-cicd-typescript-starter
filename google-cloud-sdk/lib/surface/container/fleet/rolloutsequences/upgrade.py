@@ -1,0 +1,150 @@
+# -*- coding: utf-8 -*- #
+# Copyright 2026 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Command to upgrade Cluster Upgrades in a Rollout Sequence."""
+
+from __future__ import annotations
+
+from apitools.base.py import encoding
+from apitools.base.py import exceptions as apitools_exceptions
+from googlecloudsdk.api_lib.container.fleet import client
+from googlecloudsdk.api_lib.container.fleet import types
+from googlecloudsdk.api_lib.container.fleet import util
+from googlecloudsdk.api_lib.util import exceptions as api_exceptions
+from googlecloudsdk.calliope import base
+from googlecloudsdk.calliope import parser_arguments
+from googlecloudsdk.calliope import parser_extensions
+from googlecloudsdk.command_lib.container.fleet import resources
+from googlecloudsdk.command_lib.container.fleet.rolloutsequences import flags as rolloutsequence_flags
+from googlecloudsdk.core import log
+from googlecloudsdk.core.console import console_io
+from googlecloudsdk.core.console.style import text
+
+
+@base.DefaultUniverseOnly
+@base.ReleaseTracks(
+    base.ReleaseTrack.ALPHA, base.ReleaseTrack.BETA, base.ReleaseTrack.GA
+)
+class Upgrade(base.Command):
+  """Upgrade the clusters in a rollout sequence resource."""
+
+  @classmethod
+  def Args(cls, parser: parser_arguments.ArgumentInterceptor):
+    """Registers flags for this command."""
+    flags = rolloutsequence_flags.RolloutSequenceFlags(
+        parser, release_track=cls.ReleaseTrack()
+    )
+    flags.AddRolloutSequenceResourceArg()
+    flags.AddUpgradeFlags()
+    flags.AddAsync()
+
+  def Run(self, args: parser_extensions.Namespace) -> types.Operation | None:
+    """Runs the upgrade command."""
+    release_track = self.ReleaseTrack()
+    fleet_client = client.FleetClient(release_track=release_track)
+    flag_parser = rolloutsequence_flags.RolloutSequenceFlagParser(
+        args, release_track=release_track
+    )
+
+    req = fleet_client.messages.GkehubProjectsLocationsRolloutSequencesUpgradeRequest(
+        name=resources.RolloutSequenceResourceName(args),
+        upgradeRolloutSequenceRequest=fleet_client.messages.UpgradeRolloutSequenceRequest(
+            upgradeType=flag_parser.UpgradeType(),
+            version=flag_parser.Version(),
+            force=flag_parser.Force(),
+        ),
+    )
+
+    def _ExecuteRequest(request):
+      try:
+        return fleet_client.UpgradeRolloutSequence(request)
+      except apitools_exceptions.HttpError as e:
+        api_err = api_exceptions.HttpException(e)
+
+        # Check if the error is due to an active rollout already running on
+        # the first stage of the sequence.
+        active_rollout_exists = False
+        if api_err.payload and api_err.payload.details:
+          for detail in api_err.payload.details:
+            if detail.get('@type', '').endswith(
+                'google.rpc.PreconditionFailure'
+            ):
+              violations = detail.get('violations', [])
+              for violation in violations:
+                if violation.get('type') == 'active_rollout_exists':
+                  active_rollout_exists = True
+                  break
+
+        # If so, prompt the user whether they want to cancel the active rollout
+        # and proceed with creating a new one.
+        if (
+            active_rollout_exists
+            and not request.upgradeRolloutSequenceRequest.force
+        ):
+          if console_io.PromptContinue(
+              message=(
+                  'An active rollout is already running on '
+                  'the first stage of the sequence.'
+              ),
+              prompt_string=(
+                  'Do you want to cancel the active rollout and proceed?'
+              ),
+              cancel_on_no=True,
+              default=False,
+          ):
+            request.upgradeRolloutSequenceRequest.force = True
+            return _ExecuteRequest(request)
+
+        raise api_err from e
+
+    operation = _ExecuteRequest(req)
+
+    rolloutsequence_ref = util.RolloutSequenceRef(args)
+    if flag_parser.Async():
+      log.status.Print(
+          'Upgrade request issued for rollout sequence:',
+          text.TextTypes.RESOURCE_NAME(rolloutsequence_ref.Name()) + '.',
+      )
+      log.status.Print(
+          'Check operation',
+          text.TextTypes.RESOURCE_NAME(operation.name),
+          'for status.',
+      )
+      return None
+
+    operation_client = client.OperationClient(release_track=release_track)
+    completed_operation = operation_client.Wait(util.OperationRef(operation))
+
+    if completed_operation:
+      response_dict = encoding.MessageToPyValue(completed_operation)
+      full_rollout_name = response_dict.get('rollout', '')
+      rollout_id = full_rollout_name.split('/')[-1] if full_rollout_name else ''
+    else:
+      rollout_id = ''
+
+    sequence_id = rolloutsequence_ref.Name()
+    if rollout_id:
+      log.status.Print(
+          'Rollout',
+          rollout_id,
+          'created for rollout sequence:',
+          text.TextTypes.RESOURCE_NAME(sequence_id) + '.',
+      )
+    else:
+      log.warning(
+          'Rollout created for rollout sequence %s, but the'
+          ' rollout name is missing from the API response.',
+          sequence_id,
+      )
+    return None

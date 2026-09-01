@@ -1,0 +1,372 @@
+# -*- coding: utf-8 -*- #
+# Copyright 2020 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Code for making shared messages between commands."""
+
+
+from googlecloudsdk.api_lib.run import container_resource
+from googlecloudsdk.api_lib.run import k8s_object
+from googlecloudsdk.core import log
+from googlecloudsdk.core import properties
+
+
+def GetSuccessMessageForMultiRegionSynchronousDeploy(service, regions):
+  """Returns a user message for a successful synchronous deploy.
+
+  Args:
+    service: googlecloudsdk.api_lib.run.service.Service, Deployed service for
+      which to build a success message.
+    regions: list of regions that we deployed to.
+  """
+  msg = (
+      'Multi-Region Service [{{bold}}{s}{{reset}}] '
+      'has been deployed to regions {{bold}}{r}{{reset}}.'
+      '\nRegional URLs:'
+  ).format(
+      s=service.name,
+      r=regions,
+  )
+  for region in regions:
+    condition = 'MultiRegionReady/' + region
+    url = (
+        service.conditions[condition].get('message')
+        if condition in service.conditions
+        else ''
+    )
+    msg += '\n{{bold}}{url}{{reset}} ({{bold}}{r}{{reset}})'.format(
+        r=region, url=url
+    )
+  return msg
+
+
+def GetSuccessMessageForSynchronousDeploy(
+    service, no_traffic, show_proxy_message=False, project=None, region=None
+):
+  """Returns a user message for a successful synchronous deploy.
+
+  Args:
+    service: googlecloudsdk.api_lib.run.service.Service, Deployed service for
+      which to build a success message.
+    no_traffic: bool, whether the service was deployed with --no-traffic flag.
+    show_proxy_message: bool, whether to show the proxy message.
+    project: str, the project the service is deployed to.
+    region: str, the region the service is deployed to.
+  """
+  latest_ready = service.status.latestReadyRevisionName
+  # Use lastCreatedRevisionName if --no-traffic is set. This was due to a bug
+  # where the latestReadyRevisionName was not updated in time when traffic
+  # update was not needed in reconciliation steps.
+  latest_created = service.status.latestCreatedRevisionName
+  latest_percent_traffic = 0 if no_traffic else service.latest_percent_traffic
+  msg = (
+      'Service [{{bold}}{serv}{{reset}}] '
+      'revision [{{bold}}{rev}{{reset}}] '
+      'has been deployed and is serving '
+      '{{bold}}{latest_percent_traffic}{{reset}} percent of traffic.'
+  )
+  if latest_percent_traffic:
+    msg += '\nService URL: {{bold}}{url}{{reset}}'
+  latest_url = service.latest_url
+  tag_url_message = ''
+  if latest_url:
+    tag_url_message = '\nThe revision can be reached directly at {}'.format(
+        latest_url
+    )
+  proxy_message = ''
+  if show_proxy_message:
+    proxy_message = (
+        '\nProxy locally with: '
+        'gcloud run services proxy {serv} --region {region} --project {project}'
+    ).format(serv=service.name, project=project, region=region)
+  return (
+      msg.format(
+          serv=service.name,
+          rev=latest_created if no_traffic else latest_ready,
+          url=service.domain,
+          latest_percent_traffic=latest_percent_traffic,
+      )
+      + tag_url_message
+      + proxy_message
+  )
+
+
+def GetSuccessMessageForSynchronousWorkerPoolDeploy(
+    worker_pool_name, release_track, region, revision_name=None
+):
+  """Returns a user message for a successful worker pool deploy/update.
+
+  Args:
+    worker_pool_name: str, name of the worker pool.
+    release_track: base.ReleaseTrack, release track of the command.
+    region: str, region of the worker pool.
+    revision_name: str, name of the new revision.
+  """
+  msg = 'Worker pool [{{bold}}{name}{{reset}}]'.format(name=worker_pool_name)
+  if revision_name:
+    msg += ' revision [{{bold}}{rev}{{reset}}]'.format(rev=revision_name)
+  msg += ' has been deployed.'
+
+  if release_track.prefix is not None:
+    release_track_prefix = '{}'.format(release_track.prefix)
+  else:
+    # Tail logs is not available in GA  yet. (the underlying logging API is
+    # preview)
+    release_track_prefix = 'beta'
+  logs_command = 'gcloud {track} run worker-pools logs tail {name}'.format(
+      track=release_track_prefix, name=worker_pool_name
+  )
+  console_url = (
+      'https://console.cloud.google.com/run/worker-pools/details/'
+      '{region}/{worker_pool}'
+  ).format(region=region, worker_pool=worker_pool_name)
+
+  msg += (
+      '\nDone.\n\nSee logs with:\n{logs_command}\n\nOr visit {console_url}'
+  ).format(logs_command=logs_command, console_url=console_url)
+  return msg
+
+
+def GetStartCreateInstanceMessage(
+    conn_context,
+    parent_ref,
+    resource_name=None,
+):
+  """Returns a user mesage for starting a deploy.
+
+  Args:
+    conn_context: connection_context.ConnectionInfo, Metadata for the run API
+      client.
+    parent_ref: protorpc.messages.Message, A resource reference object for the
+      resource. See googlecloudsdk.core.resources.Registry.ParseResourceId for
+      details.
+    resource_name: str | None, name of the resource.
+  """
+  msg = 'Creating {operator} instance '
+  if resource_name:
+    msg += '[{{bold}}{resource}{{reset}}] '
+  msg += 'in {ns_label} [{{bold}}{ns}{{reset}}]'
+  msg += conn_context.location_label
+  return msg.format(
+      operator=conn_context.operator,
+      ns_label=conn_context.ns_label,
+      resource=resource_name,
+      ns=parent_ref.Name(),
+  )
+
+
+def GetStartDeployMessage(
+    conn_context,
+    resource_ref,
+    operation='Deploying container to',
+    resource_kind_lower='service',
+):
+  """Returns a user mesage for starting a deploy.
+
+  Args:
+    conn_context: connection_context.ConnectionInfo, Metadata for the run API
+      client.
+    resource_ref: protorpc.messages.Message, A resource reference object for the
+      resource. See googlecloudsdk.core.resources.Registry.ParseResourceId for
+      details.
+    operation: str, what deploy action is being done.
+    resource_kind_lower: str, resource kind being deployed, e.g. "service"
+  """
+  msg = (
+      '{operation} {operator} {resource_kind} '
+      '[{{bold}}{resource}{{reset}}] in {ns_label} [{{bold}}{ns}{{reset}}]'
+  )
+  msg += conn_context.location_label
+  # For WorkerPools case resource_ref.Parent().Name() returns the region name
+  # which is not what we want.
+  ns = (
+      resource_ref.projectsId
+      if resource_kind_lower == 'worker pool'
+      else resource_ref.Parent().Name()
+  )
+  return msg.format(
+      operation=operation,
+      operator=conn_context.operator,
+      resource_kind=resource_kind_lower,
+      ns_label=conn_context.ns_label,
+      resource=resource_ref.Name(),
+      ns=ns,
+  )
+
+
+def GetNotFoundMessage(conn_context, resource_ref, resource_kind='Service'):
+  """Returns a user mesage for resource not found.
+
+  Args:
+    conn_context: connection_context.ConnectionInfo, Metadata for the run API
+      client.
+    resource_ref: protorpc.messages.Message, A resource reference object for the
+      resource. See googlecloudsdk.core.resources.Registry.ParseResourceId for
+      details.
+    resource_kind: str, resource kind, e.g. "Service"
+  """
+  msg = (
+      '{resource_kind} [{resource}] could not be found'
+      ' in {ns_label} [{ns}] region [{region}].'
+  )
+
+  return msg.format(
+      resource_kind=resource_kind,
+      resource=resource_ref.Name(),
+      ns_label=conn_context.ns_label,
+      ns=resource_ref.Parent().Name(),
+      region=conn_context.region,
+  )
+
+
+def GetRunJobMessage(release_track, job_name, repeat=False):
+  """Returns a user message for how to run a job."""
+  return (
+      '\nTo execute this job{repeat}, use:\n'
+      'gcloud{release_track} run jobs execute {job_name}'.format(
+          repeat=' again' if repeat else '',
+          release_track=(
+              ' {}'.format(release_track.prefix)
+              if release_track.prefix is not None
+              else ''
+          ),
+          job_name=job_name,
+      )
+  )
+
+
+def GetExecutionCreatedMessage(release_track, execution):
+  """Returns a user message with execution details when running a job."""
+  msg = (
+      '\nView details about this execution by running:\n'
+      'gcloud{release_track} run jobs executions describe {execution_name}'
+  ).format(
+      release_track=(
+          ' {}'.format(release_track.prefix)
+          if release_track.prefix is not None
+          else ''
+      ),
+      execution_name=execution.name,
+  )
+  if execution.status and execution.status.logUri:
+    msg += '\n\nOr visit ' + _GetExecutionUiLink(execution)
+  return msg
+
+
+def _GetExecutionUiLink(execution):
+  return (
+      'https://console.cloud.google.com/run/jobs/executions/'
+      'details/{region}/{execution_name}?project={project}'
+  ).format(
+      region=execution.region,
+      execution_name=execution.name,
+      project=execution.namespace,
+  )
+
+
+def GetBuildEquivalentForSourceRunMessage(name, pack, source, subgroup=''):
+  """Returns a user message for equivalent gcloud commands for source deploy.
+
+  Args:
+    name: name of the source target, which is either a service, a job or a
+      worker
+    pack: the pack arguments used to build the container image
+    source: the location of the source
+    subgroup: subgroup name for this command. Either 'jobs ', 'workers ' or
+      empty for services
+  """
+  build_flag = '--pack image=[IMAGE]' if pack else '--tag [IMAGE]'
+  msg = (
+      'This command is equivalent to running '
+      '`gcloud builds submit {build_flag} {source}` and '
+      '`gcloud run {subgroup}deploy {name} --image [IMAGE]`\n'
+  )
+  return msg.format(
+      name=name, build_flag=build_flag, source=source, subgroup=subgroup
+  )
+
+
+def MaybeLogDefaultGpuTypeMessage(args, resource):
+  """Logs a user message for GPU type default value if it is not provided."""
+  gpu_set = 'gpu' in args and args.gpu
+  gpu_type_set = 'gpu_type' in args and args.gpu_type
+  if 'containers' in args and args.containers:
+    for _, container_args in args.containers.items():
+      if 'gpu' in container_args and container_args.gpu:
+        gpu_set = True
+  has_gpu_type = (
+      resource
+      and resource.template
+      and resource.template.node_selector
+      and resource.template.node_selector.get(k8s_object.GPU_TYPE_NODE_SELECTOR)
+  )
+  if gpu_set and not gpu_type_set and not has_gpu_type:
+    log.status.Print(
+        'No GPU type is provided, defaulting to nvidia-l4. To specify the'
+        ' GPU type use --gpu-type.'
+    )
+
+
+def MaybeLogDefaultGpuTypeMessageForV2Resource(args, resource):
+  """Logs a user message for GPU type default value if it is not provided."""
+  gpu_set = 'gpu' in args and args.gpu
+  gpu_type_set = 'gpu_type' in args and args.gpu_type
+  if 'containers' in args and args.containers:
+    for _, container_args in args.containers.items():
+      if 'gpu' in container_args and container_args.gpu:
+        gpu_set = True
+  has_gpu_type = (
+      resource
+      and resource.template
+      and resource.template.node_selector
+      and resource.template.node_selector.accelerator
+  )
+  if gpu_set and not gpu_type_set and not has_gpu_type:
+    log.status.Print(
+        'No GPU type is provided, defaulting to nvidia-l4. To specify the'
+        ' GPU type use --gpu-type.'
+    )
+
+
+def LogInstancePostDeploymentMessages(instance, region, release_track):
+  """Logs post-deployment messages for an instance (logs tail, SSH, URL, proxy)."""
+  release_track_prefix = (
+      f' {release_track.prefix}' if release_track.prefix else ''
+  )
+  if release_track.prefix == 'alpha':
+    log.status.Print(
+        f'\nSee logs with:\ngcloud{release_track_prefix} run instances'
+        f' logs tail {instance.name} --region {region}'
+    )
+  if instance.annotations.get(k8s_object.SSH_ENABLED_ANNOTATION) == 'true':
+    log.status.Print(
+        f'\nSSH with:\ngcloud{release_track_prefix} run instances ssh'
+        f' {instance.name} --region {region}'
+    )
+  if instance.urls:
+    log.status.Print(f'\nURL: {instance.urls[0]}')
+    if (
+        instance.annotations.get(container_resource.DISABLE_IAM_ANNOTATION)
+        != container_resource.DISABLE_IAM_ANNOTATION_VALUE_DISABLED
+    ):
+      project = properties.VALUES.core.project.Get(required=True)
+      log.status.Print(
+          f'\nProxy locally with:\ngcloud{release_track_prefix} run'
+          f' instances proxy {instance.name} --region {region} --project'
+          f' {project}'
+      )
+      log.status.Print(
+          f'To make this URL public, use gcloud{release_track_prefix} run'
+          f' instances update {instance.name} --no-invoker-iam-check'
+          f' --region {region}'
+      )

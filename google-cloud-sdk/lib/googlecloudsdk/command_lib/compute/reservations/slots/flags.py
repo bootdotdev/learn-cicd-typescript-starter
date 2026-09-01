@@ -1,0 +1,108 @@
+# -*- coding: utf-8 -*- #
+# Copyright 2025 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Flags and helpers for the compute reservation slots commands."""
+
+
+def AddDescribeFlags(parser):
+  """Adds flags to the parser for the describe command."""
+  parser.add_argument(
+      '--block-name',
+      metavar='BLOCK_NAME',
+      type=str,
+      required=True,
+      help='The name of the reservation block.')
+  parser.add_argument(
+      '--sub-block-name',
+      metavar='SUB_BLOCK_NAME',
+      type=str,
+      required=True,
+      help='The name of the reservation sub block.')
+  parser.add_argument(
+      '--slot-name',
+      metavar='SLOT_NAME',
+      type=str,
+      required=True,
+      help='The name of the reservation slot.')
+
+
+def AddListFlags(parser):
+  """Adds flags to the parser for the describe command."""
+  parser.add_argument(
+      '--block-name',
+      metavar='BLOCK_NAME',
+      type=str,
+      required=True,
+      help='The name of the reservation block.')
+  parser.add_argument(
+      '--sub-block-name',
+      metavar='SUB_BLOCK_NAME',
+      type=str,
+      required=True,
+      help='The name of the reservation sub block.')
+
+
+def AddGetVersionFlags(parser):
+  """Adds flags to the parser for the get-version command."""
+  parser.add_argument(
+      '--block-name',
+      metavar='BLOCK_NAME',
+      type=str,
+      required=True,
+      help='The name of the reservation block.')
+  parser.add_argument(
+      '--sub-block-name',
+      metavar='SUB_BLOCK_NAME',
+      type=str,
+      required=True,
+      help='The name of the reservation sub block.')
+  parser.add_argument(
+      '--slot-name',
+      metavar='SLOT_NAME',
+      type=str,
+      required=True,
+      help='The name of the reservation slot.')
+  parser.add_argument(
+      '--current',
+      action='store_true',
+      help='Whether to get the current version.')
+  parser.add_argument(
+      '--target',
+      action='store_true',
+      help='Whether to get the target version.')
+
+
+def AddGetHealthFlags(parser):
+  """Adds flags to the parser for the get-health command."""
+  parser.add_argument(
+      '--block-name',
+      metavar='BLOCK_NAME',
+      type=str,
+      required=True,
+      help='Name of the reservation block.',
+  )
+  parser.add_argument(
+      '--sub-block-name',
+      metavar='SUB_BLOCK_NAME',
+      type=str,
+      required=True,
+      help='Name of the reservation sub block.',
+  )
+  parser.add_argument(
+      '--slot-name',
+      metavar='SLOT_NAME',
+      type=str,
+      required=True,
+      help='Name of the reservation slot.',
+  )

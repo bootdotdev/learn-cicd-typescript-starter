@@ -1,0 +1,34 @@
+- release_tracks: [ALPHA, BETA]
+  hints:
+    read_only: false
+  help_text:
+    brief: Delete Flag Release
+    description: |-
+      Delete a Flag Release resource.
+
+      Flag Releases are resources that groups one or more FlagRevision resources that are intended
+      to be deployed together as a single payload for a Rollout.
+
+      The safe deletion workflow is:
+
+        1. Ensure no active Rollouts reference this Flag Release.
+        2. Run this `delete` command to permanently remove the Flag Release.
+    examples: |-
+      To delete a Flag Release named 'v1-release' in the 'global' location, run:
+
+          $ {command} v1-release --location=global
+
+      To delete a Flag Release using a fully qualified resource name (useful for automation), run:
+
+          $ {command} projects/my-project/locations/global/flagReleases/v1-release
+  arguments:
+    params:
+    - help_text: |-
+        Flag Release ID of the Flag Release to delete.
+      is_positional: true
+      resource_spec: !REF googlecloudsdk.command_lib.saas_runtime.resources:flag_release
+      required: true
+  request:
+    api_version: v1beta1
+    collection:
+    - saasservicemgmt.projects.locations.flagReleases

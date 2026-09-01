@@ -1,0 +1,172 @@
+# -*- coding: utf-8 -*- #
+# Copyright 2023 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Resource definitions for Cloud Platform APIs generated from gapic."""
+
+import enum
+
+
+BASE_URL = 'https://aiplatform.googleapis.com/v1beta1/'
+DOCS_URL = 'https://cloud.google.com/ai-platform/docs'
+
+
+class Collections(enum.Enum):
+  """Collections for all supported apis."""
+
+  PROJECTS = (
+      'projects',
+      'projects/{projectsId}',
+      {},
+      ['projectsId'],
+      True
+  )
+  PROJECTS_LOCATIONS = (
+      'projects.locations',
+      'projects/{projectsId}/locations/{locationsId}',
+      {},
+      ['projectsId', 'locationsId'],
+      True
+  )
+  PROJECTS_LOCATIONS_ENDPOINTS = (
+      'projects.locations.endpoints',
+      'projects/{projectsId}/locations/{locationsId}/endpoints/{endpointsId}',
+      {},
+      ['projectsId', 'locationsId', 'endpointsId'],
+      True
+  )
+  PROJECTS_LOCATIONS_ENDPOINTS_OPERATIONS = (
+      'projects.locations.endpoints.operations',
+      'projects/{projectsId}/locations/{locationsId}/endpoints/{endpointsId}/'
+      'operations/{operationsId}',
+      {},
+      ['projectsId', 'locationsId', 'endpointsId', 'operationsId'],
+      True
+  )
+  PROJECTS_LOCATIONS_INDEXENDPOINTS = (
+      'projects.locations.indexEndpoints',
+      'projects/{projectsId}/locations/{locationsId}/indexEndpoints/'
+      '{indexEndpointsId}',
+      {},
+      ['projectsId', 'locationsId', 'indexEndpointsId'],
+      True
+  )
+  PROJECTS_LOCATIONS_INDEXENDPOINTS_OPERATIONS = (
+      'projects.locations.indexEndpoints.operations',
+      'projects/{projectsId}/locations/{locationsId}/indexEndpoints/'
+      '{indexEndpointsId}/operations/{operationsId}',
+      {},
+      ['projectsId', 'locationsId', 'indexEndpointsId', 'operationsId'],
+      True
+  )
+  PROJECTS_LOCATIONS_INDEXES = (
+      'projects.locations.indexes',
+      'projects/{projectsId}/locations/{locationsId}/indexes/{indexesId}',
+      {},
+      ['projectsId', 'locationsId', 'indexesId'],
+      True
+  )
+  PROJECTS_LOCATIONS_INDEXES_OPERATIONS = (
+      'projects.locations.indexes.operations',
+      'projects/{projectsId}/locations/{locationsId}/indexes/{indexesId}/'
+      'operations/{operationsId}',
+      {},
+      ['projectsId', 'locationsId', 'indexesId', 'operationsId'],
+      True
+  )
+  PROJECTS_LOCATIONS_MODELS = (
+      'projects.locations.models',
+      'projects/{projectsId}/locations/{locationsId}/models/{modelsId}',
+      {},
+      ['projectsId', 'locationsId', 'modelsId'],
+      True
+  )
+  PROJECTS_LOCATIONS_MODELS_OPERATIONS = (
+      'projects.locations.models.operations',
+      'projects/{projectsId}/locations/{locationsId}/models/{modelsId}/'
+      'operations/{operationsId}',
+      {},
+      ['projectsId', 'locationsId', 'modelsId', 'operationsId'],
+      True
+  )
+  PROJECTS_LOCATIONS_RAGCORPORA = (
+      'projects.locations.ragCorpora',
+      'projects/{project}/locations/{location}/ragCorpora/{rag_corpus}',
+      {},
+      ['project', 'location', 'rag_corpus'],
+      True
+  )
+  PROJECTS_LOCATIONS_RAGCORPORA_RAGDATASCHEMAS = (
+      'projects.locations.ragCorpora.ragDataSchemas',
+      'projects/{project}/locations/{location}/ragCorpora/{rag_corpus}/'
+      'ragDataSchemas/{rag_data_schema}',
+      {},
+      ['project', 'location', 'rag_corpus', 'rag_data_schema'],
+      True
+  )
+  PROJECTS_LOCATIONS_RAGCORPORA_RAGFILES = (
+      'projects.locations.ragCorpora.ragFiles',
+      'projects/{project}/locations/{location}/ragCorpora/{rag_corpus}/'
+      'ragFiles/{rag_file}',
+      {},
+      ['project', 'location', 'rag_corpus', 'rag_file'],
+      True
+  )
+  PROJECTS_LOCATIONS_RAGCORPORA_RAGFILES_RAGMETADATA = (
+      'projects.locations.ragCorpora.ragFiles.ragMetadata',
+      'projects/{project}/locations/{location}/ragCorpora/{rag_corpus}/'
+      'ragFiles/{rag_file}/ragMetadata/{rag_metadata}',
+      {},
+      ['project', 'location', 'rag_corpus', 'rag_file', 'rag_metadata'],
+      True
+  )
+  PROJECTS_LOCATIONS_RAGENGINECONFIG = (
+      'projects.locations.ragEngineConfig',
+      'projects/{project}/locations/{location}/ragEngineConfig',
+      {},
+      ['project', 'location'],
+      True
+  )
+  PROJECTS_LOCATIONS_SEMANTICGOVERNANCEPOLICIES = (
+      'projects.locations.semanticGovernancePolicies',
+      'projects/{projectsId}/locations/{locationsId}/'
+      'semanticGovernancePolicies/{semanticGovernancePoliciesId}',
+      {},
+      ['projectsId', 'locationsId', 'semanticGovernancePoliciesId'],
+      True
+  )
+  PROJECTS_LOCATIONS_SEMANTICGOVERNANCEPOLICIES_OPERATIONS = (
+      'projects.locations.semanticGovernancePolicies.operations',
+      'projects/{projectsId}/locations/{locationsId}/'
+      'semanticGovernancePolicies/{semanticGovernancePoliciesId}/operations/'
+      '{operationsId}',
+      {},
+      ['projectsId', 'locationsId', 'semanticGovernancePoliciesId', 'operationsId'],
+      True
+  )
+  PROJECTS_LOCATIONS_SEMANTICGOVERNANCEPOLICYENGINE = (
+      'projects.locations.semanticGovernancePolicyEngine',
+      'projects/{projectsId}/locations/{locationsId}/'
+      'semanticGovernancePolicyEngine',
+      {},
+      ['projectsId', 'locationsId'],
+      True
+  )
+
+  def __init__(self, collection_name, path, flat_paths, params,
+               enable_uri_parsing):
+    self.collection_name = collection_name
+    self.path = path
+    self.flat_paths = flat_paths
+    self.params = params
+    self.enable_uri_parsing = enable_uri_parsing

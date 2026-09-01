@@ -1,0 +1,45 @@
+{
+  "components": [
+    {
+      "dependencies": [
+        "core",
+        "gcloud-darwin-arm",
+        "gcloud-darwin-x86_64",
+        "gcloud-linux-x86_64",
+        "gcloud-windows-x86_64"
+      ],
+      "details": {
+        "description": "Default set of gcloud commands.",
+        "display_name": "Default set of gcloud commands"
+      },
+      "gdu_only": false,
+      "id": "gcloud",
+      "is_configuration": false,
+      "is_hidden": true,
+      "is_required": false,
+      "platform": {
+        "architectures": [
+          "arm",
+          "x86_64"
+        ],
+        "operating_systems": [
+          "LINUX",
+          "MACOSX",
+          "WINDOWS"
+        ]
+      },
+      "platform_required": false,
+      "version": {
+        "build_number": 0,
+        "version_string": ""
+      }
+    }
+  ],
+  "revision": 20260821073916,
+  "schema_version": {
+    "no_update": false,
+    "url": "https://dl.google.com/dl/cloudsdk/channels/rapid/google-cloud-sdk.tar.gz",
+    "version": 3
+  },
+  "version": "582.0.0"
+}
