@@ -1,4 +1,5 @@
 import { IncomingHttpHeaders } from "http";
+import { describe, expect, test } from "vitest";
 
 export function getAPIKey(headers: IncomingHttpHeaders): string | null {
   const authHeader = headers["authorization"];
@@ -13,3 +14,18 @@ export function getAPIKey(headers: IncomingHttpHeaders): string | null {
 
   return splitAuth[1];
 }
+
+const person = {
+  isActive: true,
+  age: 32,
+};
+
+describe("person", () => {
+  test("person is defined", () => {
+    expect(person).toBeDefined();
+  });
+
+  test("is active", () => {
+    expect(person.isActive).toBeTruthy();
+  });
+});
