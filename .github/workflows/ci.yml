@@ -17,6 +17,11 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 22
+      
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run test
+        run: npm run test
 
-      - name: Force Failure
-        run: node --version
+
