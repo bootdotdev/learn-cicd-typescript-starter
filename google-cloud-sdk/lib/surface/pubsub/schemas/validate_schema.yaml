@@ -1,0 +1,94 @@
+- release_tracks: [ALPHA, BETA, GA]
+
+  help_text:
+    brief: Validate a Pub/Sub schema.
+    description: |
+      Validate a new Pub/Sub schema.
+    examples: |
+      To validate a PROTOCOL_BUFFER schema, run:
+
+        $ {command} --definition="syntax = 'proto3'; message Message { optional string key = 1; }" --type=PROTOCOL_BUFFER
+
+      To validate an equivalent AVRO schema, run:
+
+        $ {command} --definition='{ "type": "record", "namespace": "my.ns", "name": "KeyMsg", "fields": [ { "name": "key", "type": "string" } ] }' --type=AVRO
+
+  request:
+    collection: pubsub.projects.schemas
+    api_version: v1
+    method: validate
+
+  arguments:
+    resource:
+      help_text: |
+        Parent Pub/Sub project in which to validate the schema.
+      spec: !REF googlecloudsdk.command_lib.pubsub.resources:project
+      is_parent_resource: true
+    params:
+    - group:
+        release_tracks: [BETA, GA]
+        help_text: |
+          Schema definition.
+        mutex: true
+        required: true
+        params:
+        - arg_name: definition
+          api_field: validateSchemaRequest.schema.definition
+          help_text: |
+            Inline schema definition.
+        - arg_name: definition-file
+          api_field: validateSchemaRequest.schema.definition
+          type: "googlecloudsdk.calliope.arg_parsers:FileContents:"
+          help_text: |
+            File containing schema definition.
+    - group:
+        release_tracks: [ALPHA]
+        help_text: |
+          Schema definition.
+        mutex: true
+        required: true
+        params:
+        - group:
+            help_text: |
+              Text-based schema definition, specified as an inline string or a path to the file containing the definition.
+            mutex: true
+            params:
+            - arg_name: definition
+              api_field: validateSchemaRequest.schema.definition
+              help_text: |
+                Inline schema definition.
+            - arg_name: definition-file
+              api_field: validateSchemaRequest.schema.definition
+              type: "googlecloudsdk.calliope.arg_parsers:FileContents:"
+              help_text: |
+                File containing schema definition.
+        - group:
+            help_text: |
+              Compiled Protocol Buffer configuration.
+            hidden: true
+            params:
+            - arg_name: definition-descriptor-file
+              api_field: validateSchemaRequest.schema.compiledProtoSchema.compiledBytes
+              type: "googlecloudsdk.calliope.arg_parsers:FileContents:binary=True"
+              required: true
+              help_text: |
+                File containing the precompiled Protocol Buffer schema.
+            - arg_name: root-message-name
+              api_field: validateSchemaRequest.schema.compiledProtoSchema.rootMessage
+              required: true
+              help_text: |
+                Name of the root message defined in the schema.
+    - arg_name: type
+      api_field: validateSchemaRequest.schema.type
+      required: true
+      help_text: |
+        Type of the schema.
+      choices:
+      - arg_value: avro
+        enum_value: AVRO
+      - arg_value: protocol-buffer
+        enum_value: PROTOCOL_BUFFER
+
+  response:
+    modify_response_hooks:
+    - googlecloudsdk.command_lib.pubsub.util:OutputSchemaValidated

@@ -1,0 +1,404 @@
+# -*- coding: utf-8 -*- #
+# Copyright 2021 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Cloud vmware Privateclouds client."""
+
+from apitools.base.py import list_pager
+from googlecloudsdk.api_lib.vmware import clusters
+from googlecloudsdk.api_lib.vmware import networks
+from googlecloudsdk.api_lib.vmware import util
+from googlecloudsdk.calliope import exceptions
+from googlecloudsdk.command_lib.util.apis import arg_utils
+from googlecloudsdk.core.exceptions import Error
+
+
+class SecondaryZoneNotProvidedError(Error):
+
+  def __init__(self):
+    super(SecondaryZoneNotProvidedError, self).__init__(
+        'FAILED_PRECONDITION: Secondary Zone value is required for Stretched'
+        ' Private Cloud.'
+    )
+
+
+class PreferredZoneNotProvidedError(Error):
+
+  def __init__(self):
+    super(PreferredZoneNotProvidedError, self).__init__(
+        'FAILED_PRECONDITION: Preferred Zone value is required for Stretched'
+        ' Private Cloud.'
+    )
+
+
+class MissingKmsKeyError(exceptions.RequiredArgumentException):
+
+  def __init__(self):
+    super(MissingKmsKeyError, self).__init__(
+        message='KMS Key value is required when using CMEK encryption.',
+        parameter_name='--kms-key',
+    )
+
+
+class PrivateCloudsClient(util.VmwareClientBase):
+  """cloud vmware privateclouds client."""
+
+  def __init__(self):
+    super(PrivateCloudsClient, self).__init__()
+    self.service = self.client.projects_locations_privateClouds
+    self.networks_client = networks.NetworksClient()
+    self.cluster_client = clusters.ClustersClient()
+
+  def Get(self, resource):
+    request = (
+        self.messages.VmwareengineProjectsLocationsPrivateCloudsGetRequest(
+            name=resource.RelativeName()
+        )
+    )
+
+    response = self.service.Get(request)
+    return response
+
+  def Create(
+      self,
+      resource,
+      cluster_id,
+      nodes_configs,
+      network_cidr,
+      vmware_engine_network_id,
+      private_cloud_type,
+      description=None,
+      secondary_zone=None,
+      preferred_zone=None,
+      autoscaling_settings=None,
+      service_subnet=None,
+      kms_key=None,
+      nsx_edge_ha_mode=None,
+      nsx_edge_size=None,
+      nsx_edge_count=None,
+      vsan_type=None,
+      placement_group=None,
+      preferred_placement_group=None,
+      secondary_placement_group=None,
+  ):
+    parent = resource.Parent().RelativeName()
+    project = resource.Parent().Parent().Name()
+    private_cloud_id = resource.Name()
+    private_cloud = self.messages.PrivateCloud(description=description)
+    private_cloud.type = self.GetPrivateCloudType(private_cloud_type)
+
+    if placement_group and (
+        preferred_placement_group or secondary_placement_group
+    ):
+      raise exceptions.ConflictingArgumentsException(
+          '--placement-group',
+          '--preferred-placement-group / --secondary-placement-group',
+      )
+
+    if (preferred_placement_group or secondary_placement_group) and (
+        private_cloud.type
+        is not self.messages.PrivateCloud.TypeValueValuesEnum.STRETCHED
+    ):
+      raise exceptions.InvalidArgumentException(
+          '--preferred-placement-group',
+          'Stretched placement group flags (--preferred-placement-group /'
+          ' --secondary-placement-group) can only be specified for STRETCHED'
+          ' private clouds.',
+      )
+    ven = self.networks_client.GetByID(project, vmware_engine_network_id)
+    new_subnets = []
+    if service_subnet:
+      new_subnets = [
+          self.messages.Subnet(ipCidrRange=cidr) for cidr in service_subnet
+      ]
+    nsx_edge_config = None
+    if (
+        nsx_edge_ha_mode is not None
+        or nsx_edge_size is not None
+        or nsx_edge_count is not None
+    ):
+      nsx_edge_config = self.messages.NsxEdgeConfig()
+      if nsx_edge_ha_mode is not None:
+        nsx_edge_config.haMode = self.GetNsxEdgeHaMode(nsx_edge_ha_mode)
+      if nsx_edge_size is not None:
+        nsx_edge_config.size = self.GetNsxEdgeSize(nsx_edge_size)
+      if nsx_edge_count is not None:
+        nsx_edge_config.count = nsx_edge_count
+
+    network_config = self.messages.NetworkConfig(
+        managementCidr=network_cidr,
+        vmwareEngineNetwork=ven.name,
+        serviceSubnets=new_subnets,
+        nsxEdgeConfig=nsx_edge_config,
+    )
+
+    mc_kwargs = {
+        'clusterId': cluster_id,
+        'nodeTypeConfigs': util.ConstructNodeParameterConfigMessage(
+            self.messages.ManagementCluster.NodeTypeConfigsValue,
+            self.messages.NodeTypeConfig,
+            nodes_configs,
+        ),
+        'vsanType': self.GetVsanType(vsan_type),
+        'placementGroup': placement_group,
+    }
+    if (
+        private_cloud.type
+        is self.messages.PrivateCloud.TypeValueValuesEnum.STRETCHED
+    ):
+      if not preferred_zone:
+        raise PreferredZoneNotProvidedError()
+      if not secondary_zone:
+        raise SecondaryZoneNotProvidedError()
+      mc_kwargs['stretchedClusterConfig'] = (
+          self.messages.StretchedClusterConfig(
+              preferredLocation=preferred_zone,
+              secondaryLocation=secondary_zone,
+              preferredLocationPlacementGroup=preferred_placement_group,
+              secondaryLocationPlacementGroup=secondary_placement_group,
+          )
+      )
+
+    management_cluster = self.messages.ManagementCluster(**mc_kwargs)
+    management_cluster.autoscalingSettings = (
+        util.ConstructAutoscalingSettingsMessage(
+            self.messages.AutoscalingSettings,
+            self.messages.AutoscalingPolicy,
+            self.messages.Thresholds,
+            autoscaling_settings,
+        )
+    )
+
+    if kms_key:
+      encryption_config = self.messages.EncryptionConfig(
+          type=self.messages.EncryptionConfig.TypeValueValuesEnum.CMEK,
+          cryptoKeyName=kms_key,
+      )
+      private_cloud.encryptionConfig = encryption_config
+
+    private_cloud.managementCluster = management_cluster
+    private_cloud.networkConfig = network_config
+    request = (
+        self.messages.VmwareengineProjectsLocationsPrivateCloudsCreateRequest(
+            parent=parent,
+            privateCloudId=private_cloud_id,
+            privateCloud=private_cloud,
+        )
+    )
+    return self.service.Create(request)
+
+  def Update(
+      self,
+      resource,
+      description,
+      encryption_type=None,
+      kms_key=None,
+      nsx_edge_ha_mode=None,
+      nsx_edge_size=None,
+      nsx_edge_count=None,
+  ):
+    private_cloud = self.Get(resource)
+    update_mask = []
+    if description is not None:
+      private_cloud.description = description
+      update_mask.append('description')
+
+    if encryption_type is not None:
+      update_mask.append('encryption_config')
+      if encryption_type == 'CMEK' and kms_key is None:
+        raise MissingKmsKeyError()
+      elif encryption_type == 'CMEK':
+        private_cloud.encryptionConfig = self.messages.EncryptionConfig(
+            type=self.messages.EncryptionConfig.TypeValueValuesEnum.CMEK,
+            cryptoKeyName=kms_key,
+        )
+      elif encryption_type == 'GMEK':
+        # The EncryptionConfig.Type enum only has CMEK.
+        # Setting encryptionConfig to None signifies Google-Managed Encryption.
+        private_cloud.encryptionConfig = None
+
+    if (
+        nsx_edge_ha_mode is not None
+        or nsx_edge_count is not None
+        or nsx_edge_size is not None
+    ):
+      if private_cloud.networkConfig is None:
+        private_cloud.networkConfig = self.messages.NetworkConfig()
+      if private_cloud.networkConfig.nsxEdgeConfig is None:
+        private_cloud.networkConfig.nsxEdgeConfig = (
+            self.messages.NsxEdgeConfig()
+        )
+
+      if nsx_edge_ha_mode is not None:
+        private_cloud.networkConfig.nsxEdgeConfig.haMode = (
+            self.GetNsxEdgeHaMode(nsx_edge_ha_mode)
+        )
+        update_mask.append('network_config.nsx_edge_config.ha_mode')
+
+      if nsx_edge_count is not None:
+        private_cloud.networkConfig.nsxEdgeConfig.count = nsx_edge_count
+        update_mask.append('network_config.nsx_edge_config.count')
+
+      if nsx_edge_size is not None:
+        private_cloud.networkConfig.nsxEdgeConfig.size = (
+            self.GetNsxEdgeSize(nsx_edge_size)
+        )
+        update_mask.append('network_config.nsx_edge_config.size')
+
+    request = (
+        self.messages.VmwareengineProjectsLocationsPrivateCloudsPatchRequest(
+            privateCloud=private_cloud,
+            name=resource.RelativeName(),
+            updateMask=','.join(update_mask),
+        )
+    )
+    return self.service.Patch(request)
+
+  def UnDelete(self, resource):
+    request = (
+        self.messages.VmwareengineProjectsLocationsPrivateCloudsUndeleteRequest(
+            name=resource.RelativeName()
+        )
+    )
+    return self.service.Undelete(request)
+
+  def Delete(self, resource, delay_hours=None):
+    return self.service.Delete(
+        self.messages.VmwareengineProjectsLocationsPrivateCloudsDeleteRequest(
+            name=resource.RelativeName(), delayHours=delay_hours
+        )
+    )
+
+  def DeleteNow(self, resource):
+    request = self.messages.VmwareengineProjectsLocationsPrivateCloudsPrivateCloudDeletionNowRequest(
+        name=resource.RelativeName()
+    )
+    return self.service.PrivateCloudDeletionNow(request)
+
+  def List(self, location_resource):
+    location = location_resource.RelativeName()
+    request = (
+        self.messages.VmwareengineProjectsLocationsPrivateCloudsListRequest(
+            parent=location
+        )
+    )
+    return list_pager.YieldFromList(
+        self.service,
+        request,
+        batch_size_attribute='pageSize',
+        field='privateClouds',
+    )
+
+  def GetDnsForwarding(self, resource):
+    request = self.messages.VmwareengineProjectsLocationsPrivateCloudsGetDnsForwardingRequest(
+        name=resource.RelativeName() + '/dnsForwarding'
+    )
+    return self.service.GetDnsForwarding(request)
+
+  def UpdateDnsForwarding(self, resource, args_rules):
+    rules = self._ParseRules(args_rules)
+    dns_forwarding = self.messages.DnsForwarding(forwardingRules=rules)
+    update_mask = 'forwardingRules'
+    request = self.messages.VmwareengineProjectsLocationsPrivateCloudsUpdateDnsForwardingRequest(
+        name=resource.RelativeName() + '/dnsForwarding',
+        dnsForwarding=dns_forwarding,
+        updateMask=update_mask,
+    )
+    return self.service.UpdateDnsForwarding(request)
+
+  def _ParseRules(self, args_rules):
+    return [self._ParseRule(rule) for rule in args_rules]
+
+  def _ParseRule(self, rule):
+    return self.messages.ForwardingRule(
+        domain=rule['domain'], nameServers=rule['name-servers']
+    )
+
+  def GetNsxCredentials(self, resource):
+    request = self.messages.VmwareengineProjectsLocationsPrivateCloudsShowNsxCredentialsRequest(
+        privateCloud=resource.RelativeName()
+    )
+    return self.service.ShowNsxCredentials(request)
+
+  def ResetNsxCredentials(self, resource):
+    request = self.messages.VmwareengineProjectsLocationsPrivateCloudsResetNsxCredentialsRequest(
+        privateCloud=resource.RelativeName()
+    )
+    return self.service.ResetNsxCredentials(request)
+
+  def GetVcenterCredentials(self, resource, username=None):
+    request = self.messages.VmwareengineProjectsLocationsPrivateCloudsShowVcenterCredentialsRequest(
+        privateCloud=resource.RelativeName(), username=username
+    )
+    return self.service.ShowVcenterCredentials(request)
+
+  def ResetVcenterCredentials(self, resource, username=None):
+    vcenter = self.messages.ResetVcenterCredentialsRequest()
+    vcenter.username = username
+    request = self.messages.VmwareengineProjectsLocationsPrivateCloudsResetVcenterCredentialsRequest(
+        privateCloud=resource.RelativeName(),
+        resetVcenterCredentialsRequest=vcenter,
+    )
+    return self.service.ResetVcenterCredentials(request)
+
+  def GetPrivateCloudType(self, private_cloud_type):
+    type_enum = arg_utils.ChoiceEnumMapper(
+        arg_name='type',
+        default='STANDARD',
+        message_enum=self.messages.PrivateCloud.TypeValueValuesEnum,
+    ).GetEnumForChoice(arg_utils.EnumNameToChoice(private_cloud_type))
+    return type_enum
+
+  def GetNsxEdgeHaMode(self, ha_mode):
+    return arg_utils.ChoiceEnumMapper(
+        arg_name='nsx_edge_ha_mode',
+        message_enum=self.messages.NsxEdgeConfig.HaModeValueValuesEnum,
+        include_filter=lambda x: 'HA_MODE_UNSPECIFIED' not in x,
+    ).GetEnumForChoice(arg_utils.EnumNameToChoice(ha_mode))
+
+  def GetNsxEdgeSize(self, size):
+    return arg_utils.ChoiceEnumMapper(
+        arg_name='nsx_edge_size',
+        message_enum=self.messages.NsxEdgeConfig.SizeValueValuesEnum,
+        include_filter=lambda x: 'SIZE_UNSPECIFIED' not in x,
+    ).GetEnumForChoice(arg_utils.EnumNameToChoice(size))
+
+  def GetVsanType(self, vsan_type):
+    enum_class = (
+        self.messages.ManagementCluster.VsanTypeValueValuesEnum
+    )
+    if not vsan_type:
+      return enum_class.VSAN_TYPE_UNSPECIFIED
+    vsan_type_upper = vsan_type.upper()
+    if vsan_type_upper == 'OSA':
+      return enum_class.VSAN_TYPE_OSA
+    elif vsan_type_upper == 'ESA':
+      return enum_class.VSAN_TYPE_ESA
+    return enum_class.VSAN_TYPE_UNSPECIFIED
+
+  def GetManagementCluster(self, resource):
+    for cluster in self.cluster_client.List(resource):
+      if cluster.management:
+        return cluster
+
+  def MigrateManagementVms(self, resource, cluster_id):
+    migrate_management_vms_request = self.messages.MigrateManagementVmsRequest(
+        clusterId=cluster_id
+    )
+    request = (
+        self.messages.VmwareengineProjectsLocationsPrivateCloudsMigrateManagementVmsRequest(
+            name=resource.RelativeName(),
+            migrateManagementVmsRequest=migrate_management_vms_request
+        )
+    )
+    return self.service.MigrateManagementVms(request)

@@ -1,0 +1,103 @@
+- release_tracks: [ALPHA, BETA, GA, PREVIEW]
+  hints:
+    read_only: false
+  help_text:
+    brief: "Update a storage pool."
+    description: "Update a storage pool."
+    examples: |
+      To update the size of a storage pool named 'my-storage-pool', run the following command:
+
+        $ {command} my-storage-pool --provisioned-capacity=20TB
+
+  request:
+    ALPHA:
+      api_version: alpha
+    BETA:
+      api_version: beta
+    GA:
+      api_version: v1
+    PREVIEW:
+      api_version: v1
+
+    collection: compute.storagePools
+    method: update
+    modify_request_hooks:
+    - googlecloudsdk.api_lib.compute.storage_pools.modify_request_hooks:modify_share_settings
+
+  async:
+    collection: compute.zoneOperations
+    response_name_field: selfLink
+    state:
+      field: status
+      success_values: ['DONE']
+
+  arguments:
+    resource:
+      help_text: Storage pool you want to update.
+      spec: !REF googlecloudsdk.command_lib.compute.resources:storage_pool
+
+    params:
+    - arg_name: provisioned-capacity
+      api_field: storagePoolResource.poolProvisionedCapacityGb
+      help_text: |
+        Provisioned capacity of the storage pool.
+      type: 'googlecloudsdk.calliope.arg_parsers:BinarySize:'
+      # TODO(b/283676448), this processor can be effectively eliminated.
+      processor: googlecloudsdk.api_lib.compute.storage_pools.processors:convert_to_gb
+
+    - arg_name: description
+      api_field: storagePoolResource.description
+      help_text: |
+        Description of the storage pool.
+      type: str
+
+    - arg_name: provisioned-iops
+      api_field: storagePoolResource.poolProvisionedIops
+      help_text: |
+        IOPS to provision the pool with.
+      type: int
+
+    - arg_name: provisioned-throughput
+      api_field: storagePoolResource.poolProvisionedThroughput
+      help_text: |
+        Throughput in MB/s provision the pool with.
+      type: int
+
+    - arg_name: exapool-capacity-optimized-capacity
+      api_field: storagePoolResource.exapoolProvisionedCapacityGb.capacityOptimized
+      help_text: |
+        Provisioned capacity-optimized capacity of the exapool. Can only be specified for Exapool storage pools.
+      type: 'googlecloudsdk.calliope.arg_parsers:BinarySize:'
+      processor: googlecloudsdk.api_lib.compute.storage_pools.processors:convert_to_gb
+
+    - arg_name: exapool-read-optimized-capacity
+      api_field: storagePoolResource.exapoolProvisionedCapacityGb.readOptimized
+      help_text: |
+        Provisioned read-optimized capacity of the exapool. Can only be specified for Exapool storage pools.
+      type: 'googlecloudsdk.calliope.arg_parsers:BinarySize:'
+      processor: googlecloudsdk.api_lib.compute.storage_pools.processors:convert_to_gb
+
+    - arg_name: exapool-write-optimized-capacity
+      api_field: storagePoolResource.exapoolProvisionedCapacityGb.writeOptimized
+      help_text: |
+        Provisioned write-optimized capacity of the exapool. Can only be specified for Exapool storage pools.
+      type: 'googlecloudsdk.calliope.arg_parsers:BinarySize:'
+      processor: googlecloudsdk.api_lib.compute.storage_pools.processors:convert_to_gb
+
+    - arg_name: add-share-with
+      hidden: true
+      help_text: |
+        Projects to add to storage pool share list. Specify a comma-separated list of projects to add.
+        List projects using project IDs or project numbers. If this flag is used (--add-share-with=projects), at
+        least one project must be provided.
+      type: 'googlecloudsdk.calliope.arg_parsers:ArgList:'
+      metavar: SHARE_WITH,[SHARE_WITH,...]
+
+    - arg_name: remove-share-with
+      hidden: true
+      help_text: |
+        Projects to remove from storage pool share list. Specify a comma-separated list of projects to remove.
+        List projects using project IDs or project numbers. If this flag is used (--remove-share-with=projects), at
+        least one project must be provided.
+      type: 'googlecloudsdk.calliope.arg_parsers:ArgList:'
+      metavar: SHARE_WITH,[SHARE_WITH,...]

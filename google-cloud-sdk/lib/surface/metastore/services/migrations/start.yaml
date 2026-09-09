@@ -1,0 +1,113 @@
+- release_tracks: [ALPHA, BETA]
+  hints:
+    read_only: false
+  help_text:
+    brief: |
+      Start the migration from a Dataproc Metastore service to Lakehouse runtime catalog(s).
+    description: |
+      Start the migration from a Dataproc Metastore service to Lakehouse runtime catalog(s).
+
+      If run asynchronously with `--async`, exits after printing
+      the operation name that can be used to poll the status of the
+      migration operation via:
+
+        {top_command} metastore operations describe
+  request:
+    method: startMigration
+    ALPHA:
+      api_version: v1alpha
+    BETA:
+      api_version: v1beta
+    collection: metastore.projects.locations.services
+
+  arguments:
+    resource:
+      help_text: |
+        The Dataproc Metastore service to start the migration on.
+      spec: !REF googlecloudsdk.command_lib.metastore.resources:service
+    params:
+    - arg_name: mode
+      api_field: startMigrationRequest.migrationExecution.biglakeMetastoreMigrationConfig.mode
+      help_text: |
+        The execution mode of the migration.
+      default: backfill
+      choices:
+      - arg_value: backfill
+        enum_value: BACKFILL
+        help_text: |
+          Performs the metadata migration of requested resources. The migration
+          completes once the backfill is finished.
+    - arg_name: conflict-policy
+      api_field: startMigrationRequest.migrationExecution.biglakeMetastoreMigrationConfig.conflictPolicy
+      help_text: |
+        The policy to handle conflicts when migrating resources to Lakehouse.
+      default: skip
+      choices:
+      - arg_value: skip
+        enum_value: SKIP
+        help_text: |
+          Skip migrating resources that already exist in the target catalog.
+      - arg_value: overwrite
+        enum_value: OVERWRITE
+        help_text: |
+          Update resources that already exist in the target catalog.
+    - arg_name: dry-run
+      api_field: startMigrationRequest.migrationExecution.biglakeMetastoreMigrationConfig.dryRun
+      help_text: |
+        If true, performs discovery of requested resources and analysis against
+        the target catalog to come up with a plan for each resource (e.g. Create,
+        Update, Skip, etc.). No metadata is actually migrated.
+    - arg_name: report-path
+      api_field: startMigrationRequest.migrationExecution.biglakeMetastoreMigrationConfig.reportPath
+      processor: googlecloudsdk.command_lib.metastore.validators:ValidateGcsUri:arg_name=--report-path
+      help_text: |
+        The Cloud Storage path where the backfill or dry run
+        report should be written. If not provided, the report will be generated
+        in the service's artifacts bucket. Format: "gs://path/to/folder".
+    - group:
+        help_text: |
+          Configuration for migrating Hive tables to a BigLake Hive catalog.
+        params:
+        - arg_name: hive-catalog
+          api_field: startMigrationRequest.migrationExecution.biglakeMetastoreMigrationConfig.hiveConfig.catalog
+          processor: googlecloudsdk.command_lib.metastore.validators:ValidateBigLakeCatalogResourceName:arg_name=--hive-catalog
+          help_text: |
+            The target catalog for migrated databases and tables.
+            Format: "projects/{project_id_or_number}/catalogs/{catalog_id}"
+          required: true
+        - arg_name: hive-databases
+          api_field: startMigrationRequest.migrationExecution.biglakeMetastoreMigrationConfig.hiveConfig.databases
+          type: "arg_list"
+          processor: googlecloudsdk.command_lib.metastore.validators:ValidateDatabaseOrNamespaceList:arg_name=--hive-databases
+          help_text: |
+            Comma-separated list of databases to migrate to the Hive catalog.
+            Defaults to "*" (migrate all databases). Note: If Iceberg tables exist
+            in these databases, they will only be migrated if `--iceberg-catalog`
+            is also specified.
+          default: ['*']
+    - group:
+        help_text: |
+          Configuration for migrating Iceberg tables to a BigLake Iceberg REST catalog.
+        params:
+        - arg_name: iceberg-catalog
+          api_field: startMigrationRequest.migrationExecution.biglakeMetastoreMigrationConfig.icebergConfig.catalog
+          processor: googlecloudsdk.command_lib.metastore.validators:ValidateBigLakeCatalogResourceName:arg_name=--iceberg-catalog
+          help_text: |
+            The target catalog for migrated Iceberg metadata.
+            Format: "projects/{project_id_or_number}/catalogs/{catalog_id}"
+          required: true
+        - arg_name: iceberg-namespaces
+          api_field: startMigrationRequest.migrationExecution.biglakeMetastoreMigrationConfig.icebergConfig.namespaces
+          type: "arg_list"
+          processor: googlecloudsdk.command_lib.metastore.validators:ValidateDatabaseOrNamespaceList:arg_name=--iceberg-namespaces
+          help_text: |
+            Comma-separated list of namespaces to migrate to the Iceberg REST catalog.
+            Defaults to "*" (migrate all namespaces). Note: If Hive tables exist
+            in these namespaces, they will only be migrated if `--hive-catalog`
+            is also specified.
+          default: ['*']
+
+  async:
+    collection: metastore.projects.locations.operations
+    extract_resource_result: false
+    result_attribute: response

@@ -1,0 +1,28 @@
+release_tracks: [ALPHA]
+
+help_text:
+  brief: Create a new artifact guard policy.
+  description: |
+    Create a new artifact policy to guard against vulnerabilities.
+
+request:
+  api_version: v1alpha
+  collection:
+  - artifactscanguard.organizations.locations.policies
+  - artifactscanguard.projects.locations.policies
+  method: create
+  parse_resource_into_request: true
+
+arguments:
+  params:
+  - help_text: The policy to create.
+    resource_spec: !REF googlecloudsdk.command_lib.scc.resources:organization_or_project_location_policy
+    is_positional: true
+    request_id_field: policyId
+  - arg_name: policy-file-path
+    api_field: policy
+    required: true
+    type: "googlecloudsdk.calliope.arg_parsers:FileContents:"
+    processor: googlecloudsdk.core.yaml:load
+    help_text: |
+      Path to a YAML file containing the policy definition.

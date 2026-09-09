@@ -1,0 +1,92 @@
+# -*- coding: utf-8 -*-
+# Copyright 2021 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+"""Run gRPC client. This class is automatically generated."""
+
+import contextlib
+
+from googlecloudsdk.core import gapic_util
+from googlecloudsdk.generated_clients.gapic_clients import run_v2
+
+
+class GapicWrapperClient(object):
+  """Run client."""
+  types = run_v2.types
+
+  def __init__(self, credentials, **kwargs):
+    """
+    Instantiates the GapicWrapperClient for run_v2.
+
+    Args:
+      credentials: google.auth.credentials.Credentials, the credentials to use.
+      **kwargs: Additional kwargs to pass to gapic.MakeClient.
+
+    Returns:
+        GapicWrapperClient
+    """
+    self._exit_stack = contextlib.ExitStack()
+    self.credentials = credentials
+    self.builds = gapic_util.MakeClient(
+        run_v2.services.builds.client.BuildsClient,
+        credentials, **kwargs)
+    self.executions = gapic_util.MakeClient(
+        run_v2.services.executions.client.ExecutionsClient,
+        credentials, **kwargs)
+    self.instances = gapic_util.MakeClient(
+        run_v2.services.instances.client.InstancesClient,
+        credentials, **kwargs)
+    self.jobs = gapic_util.MakeClient(
+        run_v2.services.jobs.client.JobsClient,
+        credentials, **kwargs)
+    self.revisions = gapic_util.MakeClient(
+        run_v2.services.revisions.client.RevisionsClient,
+        credentials, **kwargs)
+    self.services = gapic_util.MakeClient(
+        run_v2.services.services.client.ServicesClient,
+        credentials, **kwargs)
+    self.source = gapic_util.MakeClient(
+        run_v2.services.source_upload.client.SourceUploadClient,
+        credentials, **kwargs)
+    self.tasks = gapic_util.MakeClient(
+        run_v2.services.tasks.client.TasksClient,
+        credentials, **kwargs)
+    self.worker = gapic_util.MakeClient(
+        run_v2.services.worker_pools.client.WorkerPoolsClient,
+        credentials, **kwargs)
+
+  def __enter__(self):
+    self._exit_stack.enter_context(self.builds)
+    self._exit_stack.enter_context(self.executions)
+    self._exit_stack.enter_context(self.instances)
+    self._exit_stack.enter_context(self.jobs)
+    self._exit_stack.enter_context(self.revisions)
+    self._exit_stack.enter_context(self.services)
+    self._exit_stack.enter_context(self.source)
+    self._exit_stack.enter_context(self.tasks)
+    self._exit_stack.enter_context(self.worker)
+    return self
+
+  def close(self):
+    if hasattr(self, '_exit_stack'):
+      self._exit_stack.close()
+
+  def __exit__(self, exc_type, exc_value, traceback):
+    self.close()
+
+  def __del__(self):
+    try:
+      self.close()
+    except Exception:
+      pass

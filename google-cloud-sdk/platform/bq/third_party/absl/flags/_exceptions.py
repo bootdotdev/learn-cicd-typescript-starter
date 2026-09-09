@@ -1,0 +1,134 @@
+#!/usr/bin/env python
+# Copyright 2017 The Abseil Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Exception classes in ABSL flags library.
+
+Do NOT import this module directly. Import the flags package and use the
+aliases defined at the package level instead.
+"""
+
+from collections.abc import Sequence
+import sys
+from typing import Any
+
+from absl.flags import _helpers
+
+
+_helpers.disclaim_module_ids.add(id(sys.modules[__name__]))
+
+_UNKNOWN_MODULE = '<unknown>'
+
+
+class Error(Exception):
+  """The base class for all flags errors."""
+
+
+class CantOpenFlagFileError(Error):
+  """Raised when flagfile fails to open.
+
+  E.g. the file doesn't exist, or has wrong permissions.
+  """
+
+
+# absl:google3-begin(C++ flags only)
+class NoneCannotPropagateToCppFlagsError(Error):
+  """Raised when setting a C++ flag's value to None.
+
+  Python's None value could not be synchronized to a C++ flag's value. Thus if
+  a flag allows to synchronize with C++, its value couldn't be None.
+  """
+
+
+# absl:google3-end
+class DuplicateFlagError(Error):
+  """Raised if there is a flag naming conflict."""
+
+  @classmethod
+  def from_flag(
+      cls, flagname: str, flag_values: Any, other_flag_values: Any = None
+  ):
+    """Creates a DuplicateFlagError by providing flag name and values.
+
+    Args:
+      flagname: The name of the flag being redefined.
+      flag_values: The FlagValues instance containing the first definition of
+        flagname.
+      other_flag_values: If it is not None, it should be the FlagValues object
+        where the second definition of flagname occurs. If it is None, we assume
+        that we're being called when attempting to create the flag a second
+        time, and we use the module calling this one as the source of the second
+        definition.
+
+    Returns:
+      An instance of DuplicateFlagError.
+    """
+    first_module = flag_values.find_module_defining_flag(
+        flagname, default=_UNKNOWN_MODULE
+    )
+    if other_flag_values is None:
+      second_module = _helpers.get_calling_module()
+    else:
+      second_module = other_flag_values.find_module_defining_flag(
+          flagname, default=_UNKNOWN_MODULE
+      )
+    flag_summary = flag_values[flagname].help
+    msg = (
+        f"The flag '{flagname}' is defined twice. First from {first_module},"
+        f' second from {second_module}. Description from first occurrence:'
+        f' {flag_summary}'
+    )
+    return cls(msg)
+
+
+class IllegalFlagValueError(Error):
+  """Raised when the flag command line argument is illegal."""
+
+
+class UnrecognizedFlagError(Error):
+  """Raised when a flag is unrecognized.
+
+  Attributes:
+    flagname: The name of the unrecognized flag.
+    flagvalue: The value of the flag, empty if the flag is not defined.
+    suggestions: Optional suggestions about the correct flag name.
+  """
+
+  def __init__(
+      self,
+      flagname: str,
+      flagvalue: Any = '',
+      suggestions: Sequence[str] = (),
+  ):
+    self.flagname = flagname
+    self.flagvalue = flagvalue
+    if suggestions:
+      # Space before the question mark is intentional to not include it in the
+      # selection when copy-pasting the suggestion from (some) terminals.
+      tip = f'. Did you mean: {", ".join(suggestions)} ?'
+    else:
+      tip = ''
+    super().__init__(f"Unknown command line flag '{flagname}'{tip}")
+
+
+class UnparsedFlagAccessError(Error):
+  """Raised when accessing the flag value from unparsed :class:`FlagValues`."""
+
+
+class ValidationError(Error):
+  """Raised when flag validator constraint is not satisfied."""
+
+
+class FlagNameConflictsWithMethodError(Error):
+  """Raised when a flag name conflicts with :class:`FlagValues` methods."""

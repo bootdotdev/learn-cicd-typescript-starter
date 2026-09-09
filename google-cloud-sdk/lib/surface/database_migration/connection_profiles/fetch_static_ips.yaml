@@ -1,0 +1,32 @@
+- release_tracks: [ALPHA, GA]
+
+  help_text:
+    brief: List IPs used for static IP connectivity method.
+    description: |
+      Fetches a set of static IP addresses that need to be allowlisted when using the static IP
+      connectivity method.
+    examples: |
+      To list the static IPs, run:
+
+        $ {command} my-location
+
+  request:
+    regional_endpoint_compatibility: SUPPORTED
+    collection: datamigration.projects.locations
+    method: fetchStaticIps
+    api_version: v1
+
+  response:
+    id_field: staticIps
+
+  arguments:
+    resource:
+      spec: !REF googlecloudsdk.command_lib.database_migration.resources:region
+      help_text: |
+        The region you want to list static ips of.
+    params:
+    - arg_name: fetch-reserved-public-ips
+      api_field: fetchReservedPublicIps
+      type: bool
+      help_text: |
+        Indicates whether to fetch the reserved public IP addresses allocated for private connections in this location.

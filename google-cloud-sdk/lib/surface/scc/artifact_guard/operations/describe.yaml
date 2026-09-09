@@ -1,0 +1,22 @@
+release_tracks: [ALPHA]
+help_text:
+  brief: |
+    Describe an artifact guard operation.
+  description: |
+    Returns the details of an artifact guard operation for a given operation name.
+  examples: |
+    To describe an operation named "organizations/123/locations/global/operations/myOperation",
+      $ {command} organizations/123/locations/global/operations/myOperation
+
+request:
+  api_version: v1alpha
+  method: get
+  collection:
+  - artifactscanguard.organizations.locations.operations
+  - artifactscanguard.projects.locations.operations
+
+arguments:
+  resource:
+    spec: !REF googlecloudsdk.command_lib.scc.resources:artifact_scan_guard_operation
+    help_text: |
+      The Artifact Guard operation to describe.

@@ -1,0 +1,42 @@
+- release_tracks: [ALPHA, BETA, GA]
+  hints:
+    read_only: true
+  help_text:
+    brief: List Backup and DR data source references.
+    description: List Backup and DR data source references.
+    examples: |
+      To list data source references in all locations, run:
+
+        $ {command}
+
+      To list data source references in a location 'my-location', run:
+
+        $ {command} --location=my-location
+  request:
+    GA:
+      api_version: v1
+    BETA:
+      api_version: v1beta
+    ALPHA:
+      api_version: v1alpha
+    collection: backupdr.projects.locations.dataSourceReferences
+
+  response:
+    id_field: name
+
+  arguments:
+    resource:
+      help_text: Location for which data source references should be listed.
+      spec: !REF googlecloudsdk.command_lib.backupdr.resources:locationDefaultGlobal
+      is_positional: false
+
+  output:
+    format: |
+      table(
+        name.basename():label=NAME,
+        dataSourceGcpResourceInfo.type:label=RESOURCE_TYPE,
+        dataSourceGcpResourceInfo.gcpResourcename:label=RESOURCE_NAME,
+        dataSource:label=DATA_SOURCE,
+        dataSourceBackupConfigState:label=BACKUP_CONFIG_STATE,
+        dataSourceGcpResourceInfo.location:label=LOCATION
+      )

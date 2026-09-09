@@ -1,0 +1,47 @@
+release_tracks: [ALPHA]
+
+help_text:
+  brief: Create a new artifact guard connector.
+  description: |
+    Create a new artifact guard connector.
+  examples: |
+    To create a connector named `my-connector` in `organizations/123/locations/global`:
+      $ {command} my-connector --location=global --organization=123 --pipeline-type=google-cloud-build
+
+    To create a connector named `my-connector` in `projects/123/locations/global`:
+      $ {command} my-connector --location=global --project=123 --pipeline-type=google-cloud-build
+
+request:
+  api_version: v1alpha
+  collection:
+  - artifactscanguard.organizations.locations.connectors
+  - artifactscanguard.projects.locations.connectors
+  method: create
+  parse_resource_into_request: true
+
+arguments:
+  params:
+  - help_text: The Artifact Guard connector to create.
+    resource_spec: !REF googlecloudsdk.command_lib.scc.resources:organization_or_project_location_connector
+    is_positional: true
+    request_id_field: connectorId
+  - arg_name: pipeline-type
+    api_field: connector.pipelineType
+    required: true
+    help_text: |
+      The type of pipeline to be used for the connector.
+    choices:
+    - arg_value: google-cloud-build
+      enum_value: GOOGLE_CLOUD_BUILD
+    - arg_value: github-actions
+      enum_value: GITHUB_ACTIONS
+    - arg_value: jenkins-pipeline
+      enum_value: JENKINS_PIPELINE
+  - arg_name: display-name
+    api_field: connector.displayName
+    help_text: |
+      The display name of the connector.
+  - arg_name: description
+    api_field: connector.description
+    help_text: |
+      The description of the connector.

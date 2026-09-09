@@ -1,0 +1,59 @@
+# -*- coding: utf-8 -*- #
+# Copyright 2023 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Command to show fleet rollout information."""
+
+
+from googlecloudsdk.api_lib.container.fleet import client
+from googlecloudsdk.api_lib.container.fleet import util
+from googlecloudsdk.calliope import base
+from googlecloudsdk.calliope import parser_arguments
+from googlecloudsdk.command_lib.container.fleet.rollouts import flags as rollout_flags
+from googlecloudsdk.command_lib.container.fleet.rollouts import rollout_printer
+from googlecloudsdk.core.resource import resource_printer
+
+_EXAMPLES = """
+To describe a rollout named `my-rollout`,
+run:
+
+$ {command} my-rollout
+"""
+
+
+@base.ReleaseTracks(
+    base.ReleaseTrack.ALPHA, base.ReleaseTrack.BETA, base.ReleaseTrack.GA
+)
+@base.DefaultUniverseOnly
+class Describe(base.DescribeCommand):
+  """Describe a fleet rollout."""
+
+  detailed_help = {'EXAMPLES': _EXAMPLES}
+
+  @classmethod
+  def Args(cls, parser: parser_arguments.ArgumentInterceptor) -> None:
+    flags = rollout_flags.RolloutFlags(parser, cls.ReleaseTrack())
+    flags.AddRolloutResourceArg()
+    resource_printer.RegisterFormatter(
+        rollout_printer.ROLLOUT_PRINTER_FORMAT,
+        rollout_printer.RolloutPrinter,
+    )
+    parser.display_info.AddFormat(rollout_printer.ROLLOUT_PRINTER_FORMAT)
+
+  def Run(self, args):
+    fleet_client = client.FleetClient(release_track=self.ReleaseTrack())
+    req = fleet_client.messages.GkehubProjectsLocationsRolloutsGetRequest(
+        name=util.RolloutName(args)
+    )
+    return fleet_client.DescribeRollout(req)

@@ -1,0 +1,190 @@
+# -*- coding: utf-8 -*- #
+# Copyright 2023 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Utility for creating Looker instances."""
+
+
+from typing import Any
+from googlecloudsdk.api_lib.util import apis
+from googlecloudsdk.calliope import exceptions
+from googlecloudsdk.core.util import times
+
+
+def GetMessagesModuleForVersion(version):
+  return apis.GetMessagesModule('looker', version)
+
+
+def ParseToDateTypeV1Alpha(date):
+  """Convert the input to Date Type for v1alpha* Create method."""
+  messages = GetMessagesModuleForVersion('v1alpha2')
+  return ParseDate(date, messages)
+
+
+def ParseToDateTypeV1(date):
+  """Convert the input to Date Type for v1 Create method."""
+  messages = GetMessagesModuleForVersion('v1')
+  return ParseDate(date, messages)
+
+
+def ParseDate(date, messages, fmt='%Y-%m-%d'):
+  """Convert to Date Type."""
+  datetime_obj = times.ParseDateTime(date, fmt=fmt)
+  return messages.Date(
+      year=datetime_obj.year, month=datetime_obj.month, day=datetime_obj.day
+  )
+
+
+def ParseTimeOfDayDenyPeriodV1Alpha(time_of_day):
+  """Convert input to TimeOfDay type for Deny Main Period v1alpha*."""
+  messages = GetMessagesModuleForVersion('v1alpha2')
+  arg = '--deny-maintenance-period-time'
+  error_message = (
+      "'--deny-maintenance-period-time' must be used in a valid 24-hr UTC Time"
+      ' format.'
+  )
+  CheckTimeOfDayField(time_of_day, error_message, arg)
+  return ParseTimeOfDay(time_of_day, messages)
+
+
+def ParseTimeOfDayDenyPeriodV1(time_of_day):
+  """Convert input to TimeOfDay type for Deny Main Period v1."""
+  messages = GetMessagesModuleForVersion('v1')
+  arg = '--deny-maintenance-period-time'
+  error_message = (
+      "'--deny-maintenance-period-time' must be used in a valid 24-hr UTC Time"
+      ' format.'
+  )
+  CheckTimeOfDayField(time_of_day, error_message, arg)
+  return ParseTimeOfDay(time_of_day, messages)
+
+
+def ParseTimeOfDayMainWindowV1Alpha(time_of_day):
+  """Convert input to TimeOfDay type for Main Window v1alpha*."""
+  messages = GetMessagesModuleForVersion('v1alpha2')
+  arg = '--maintenance-window-time'
+  error_message = (
+      "'--maintenance-window-time' must be used in a valid 24-hr UTC Time"
+      ' format.'
+  )
+  CheckTimeOfDayField(time_of_day, error_message, arg)
+  return ParseTimeOfDay(time_of_day, messages)
+
+
+def ParseTimeOfDayMainWindowV1(time_of_day):
+  """Convert input to TimeOfDay type for Main Window v1."""
+  messages = GetMessagesModuleForVersion('v1')
+  arg = '--maintenance-window-time'
+  error_message = (
+      "'--maintenance-window-time' must be used in a valid 24-hr UTC Time"
+      ' format.'
+  )
+  CheckTimeOfDayField(time_of_day, error_message, arg)
+  return ParseTimeOfDay(time_of_day, messages)
+
+
+def ParseTimeOfDayPeriodicExportStartTimeV1Alpha(time_of_day):
+  """Convert input to TimeOfDay type for Periodic Export Start Time v1alpha2."""
+  messages = GetMessagesModuleForVersion('v1alpha2')
+  arg = '--periodic-export-start-time'
+  error_message = (
+      "'--periodic-export-start-time' must be used in a valid 24-hr UTC Time"
+      ' format.'
+  )
+  CheckTimeOfDayField(time_of_day, error_message, arg)
+  return ParseTimeOfDay(time_of_day, messages)
+
+
+def ParseTimeOfDayPeriodicExportStartTimeV1(time_of_day):
+  """Convert input to TimeOfDay type for Periodic Export Start Time v1."""
+  messages = GetMessagesModuleForVersion('v1')
+  arg = '--periodic-export-start-time'
+  error_message = (
+      "'--periodic-export-start-time' must be used in a valid 24-hr UTC Time"
+      ' format.'
+  )
+  CheckTimeOfDayField(time_of_day, error_message, arg)
+  return ParseTimeOfDay(time_of_day, messages)
+
+
+def CheckTimeOfDayField(time_of_day, error_message, arg):
+  """Checks if input is a valid TimeOfDay format."""
+  hour_and_min = time_of_day.split(':')
+  if (
+      len(hour_and_min) != 2
+      or not hour_and_min[0].isdigit()
+      or not hour_and_min[1].isdigit()
+  ):
+    raise exceptions.InvalidArgumentException(arg, error_message)
+
+  hour = int(hour_and_min[0])
+  minute = int(hour_and_min[1])
+
+  if hour < 0 or minute < 0 or hour > 23 or minute > 59:
+    # NOMUTANTS -- Even with this 1 line removed, the affected tests still pass.
+    raise exceptions.InvalidArgumentException(arg, error_message)
+
+
+def ParseTimeOfDay(time_of_day, messages):
+  hour_and_min = time_of_day.split(':')
+  hour = int(hour_and_min[0])
+  minute = int(hour_and_min[1])
+  return messages.TimeOfDay(hours=hour, minutes=minute)
+
+
+def SetDefaultReleaseChannel(unused_instance_ref, args, create_request):
+  """Sets default release channel if not specified by user."""
+  if not args.IsSpecified('release_channel'):
+    create_request.instance.releaseChannel = (
+        create_request.instance.ReleaseChannelValueValuesEnum.RELEASE_CHANNEL_UNSPECIFIED
+    )
+  return create_request
+
+
+def ValidateReleaseChannelConfig(
+    unused_instance_ref: Any, args: Any, request: Any
+) -> Any:
+  """Validates release channel configuration.
+
+  Args:
+    unused_instance_ref: googlecloudsdk.core.resources.Resource, The reference
+      to the instance.
+    args: argparse.Namespace, The arguments passed to the command.
+    request: messages.LookerProjectsLocationsInstancesCreateRequest, The request
+      to be sent to the API.
+
+  Returns:
+    messages.LookerProjectsLocationsInstancesCreateRequest, The request.
+
+  Raises:
+    exceptions.InvalidArgumentException: If release channel is RAPID and
+      maintenance window or deny maintenance period is specified.
+  """
+  instance = request.instance
+  release_channel_enum = instance.ReleaseChannelValueValuesEnum
+  if instance.releaseChannel != release_channel_enum.RAPID:
+    return request
+
+  if (
+      args.IsSpecified('maintenance_window_day')
+      or args.IsSpecified('maintenance_window_time')
+      or args.IsSpecified('deny_maintenance_period_start_date')
+      or args.IsSpecified('deny_maintenance_period_end_date')
+      or args.IsSpecified('deny_maintenance_period_time')
+  ):
+    raise exceptions.InvalidArgumentException(
+        '--release-channel',
+        'Maintenance window and deny maintenance periods are not supported '
+        'for instances in the RAPID release channel.',
+    )
+  return request

@@ -1,0 +1,43 @@
+organization:
+  name: organization
+  collection: edgecontainer.organizations
+  attributes:
+  - &organization
+    parameter_name: organizationsId
+    attribute_name: organization
+    help: The organization name.
+
+location:
+  name: location
+  collection: edgecontainer.organizations.locations
+  attributes:
+  - *organization
+  - &location
+    parameter_name: locationsId
+    attribute_name: location
+    help: The location name.
+  disable_auto_completers: false
+
+operation:
+  name: operation
+  collection: edgecontainer.organizations.locations.operations
+  attributes:
+  - *organization
+  - *location
+  - parameter_name: operationsId
+    attribute_name: operation
+    help: Edge-container long running operation.
+  disable_auto_completers: false
+
+identityProvider:
+  name: identityProvider
+  collection: edgecontainer.organizations.locations.identityProviders
+  request_id_field: identityProviderId
+  attributes:
+  - *organization
+  - *location
+  - &identityProvider
+    parameter_name: identityProvidersId
+    attribute_name: identity_provider
+    help: The name of the identity provider.
+  disable_auto_completers: false

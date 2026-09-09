@@ -1,0 +1,55 @@
+- release_tracks: [ALPHA, BETA, GA]
+  help_text:
+    brief: List composite indexes.
+    description: |
+      List composite indexes.
+
+      By default, this command pretty prints a summary of the index specification.
+      For the full index specification, please specify a format using the
+      `--format=json|yaml|text|etc.` flag. For more information about format, run
+      `$ gcloud topic formats`.
+    examples: |
+      The following command lists all composite indexes in the database:
+
+        $ {command}
+
+        $ {command} --database=(default)
+
+      The following command lists composite indexes in the `Events` collection group:
+
+        $ {command} --filter=COLLECTION_GROUP:Events
+
+  request:
+    collection: firestore.projects.databases.collectionGroups.indexes
+
+  response:
+    id_field: name
+
+  arguments:
+    resource:
+      help_text: Collection group of the index.
+      is_positional: false
+      # By using collection_group_with_default this resource arg is correctly determined to be
+      # optional and uses the special '-' collection group to list all indexes in the database.
+      spec: !REF googlecloudsdk.command_lib.firestore.resources:collection_group_with_default
+      # Ideally the API would only return indexes whose collection group matches the one in the
+      # request; however currently no matter what collection group you provide you'll get a list of
+      # all the indexes in all collection groups. Thus we remove the collection group flag here
+      # since it has no effect. The user can always filter the responses by collection group using
+      # the gcloud wide --filter flag.
+      removed_flags:
+      - collection-group
+
+  output:
+    # TODO(b/540544612): Replace with raw json format if spec grows larger.
+    format: "table[all-box](\
+               name.basename(),\
+               name.segment(-3):label=COLLECTION_GROUP:sort=1,\
+               queryScope,\
+               state,\
+               apiScope,\
+               fields.*extract('fieldPath').*flatten().join('\n'):label=FIELD_PATHS,\
+               fields.*extract('order').*flatten().join('\n'):label=ORDER:optional,\
+               fields.*extract('arrayConfig').*flatten().join('\n'):label=ARRAY_CONFIG:optional,\
+               fields.*extract('vectorConfig').*extract('dimension').*flatten().join('\n'):label=VECTOR_CONFIG:optional,\
+               fields.*extract('searchConfig').**list(show='keys', separator=', ').*sub('Spec', '').*upper().*flatten().join('\n'):label=SEARCH_CONFIG:optional)"

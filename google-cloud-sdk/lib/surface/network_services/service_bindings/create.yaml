@@ -1,0 +1,55 @@
+release_tracks: [GA, BETA, ALPHA]
+
+help_text:
+  brief: |
+    Create a service binding.
+  description: |
+    Create a new service binding with the given name.
+  examples: |
+    Create a service binding with the name 'my-service-binding' and location 'global'.
+
+      $ {command} my-service-binding --location=global
+
+arguments:
+  resource:
+    spec: !REF googlecloudsdk.command_lib.network_services.resources:serviceBinding
+    help_text: |
+      Name of the service binding to be created.
+  params:
+  - arg_name: description
+    api_field: serviceBinding.description
+    help_text: The description for the service binding.
+  - arg_name: source-services
+    api_field: serviceBinding.source.services
+    release_tracks: [ALPHA]
+    help_text: |
+      List of resources attached to the ServiceBinding. The resources can be
+      Cloud Run services.
+    type: "googlecloudsdk.calliope.arg_parsers:ArgList:"
+  - arg_name: destination-services
+    api_field: serviceBinding.destination.services
+    release_tracks: [ALPHA]
+    help_text: |
+      List of service URIs to which the ServiceBinding resource is bound.
+    type: "googlecloudsdk.calliope.arg_parsers:ArgList:"
+  - arg_name: matches-hostname
+    api_field: serviceBinding.matches
+    release_tracks: [ALPHA]
+    repeated: true
+    type: "googlecloudsdk.calliope.arg_parsers:ArgList:"
+    help_text: |
+      List of hostnames to match against the HTTP request host header.
+    processor: googlecloudsdk.command_lib.network_services.util:ServiceBindingMatchesHook:api_version=v1alpha1
+
+async:
+  collection: networkservices.projects.locations.operations
+
+request: &request
+  ALPHA:
+    api_version: v1alpha1
+  BETA:
+    api_version: v1beta1
+  GA:
+    api_version: v1
+  collection: networkservices.projects.locations.serviceBindings
+  method: create

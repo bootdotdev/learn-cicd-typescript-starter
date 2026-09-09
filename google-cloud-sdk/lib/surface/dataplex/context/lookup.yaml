@@ -1,0 +1,63 @@
+- release_tracks: [ALPHA, GA]
+  help_text:
+    brief: Looks up metadata that can be used as context by agents.
+    description: |
+      Looks up metadata that can be used as context by agents.
+
+      Fetches detailed contextual metadata for the specified data assets. Data assets can be
+      identified by their Dataplex entry name.
+      The returned context can include schema, descriptions, business annotations, data quality
+      insights, and relationships, structured for application use. This output is particularly
+      useful for providing grounding to Large Language Models (LLMs), enabling more accurate and
+      context-aware interactions with your data.
+
+    examples: |
+      To look up Dataplex Context for BigQuery tables 'table1' and 'table2' in dataset 'my-dataset' within project 'test-dataplex' in location 'us-central1', run:
+
+          $ {command} --location=us-central1 --project=test-dataplex --resources=resource1,resource2
+
+      To look up context using Dataplex entry names:
+
+          $ {command} --location=us-central1 --project=test-dataplex --resources=projects/test-dataplex/locations/us-central1/entryGroups/my-group/entries/my-entry
+
+      To look up context using the default project and location from your gcloud configuration:
+
+          $ {command} --resources=resource1,resource2
+
+  request:
+    collection: dataplex.projects.locations
+    api_version: v1
+    method: lookupContext
+    modify_request_hooks:
+    - googlecloudsdk.command_lib.dataplex.request_hooks:TransformLookupContextOptionsToRequest
+
+  arguments:
+    resource:
+      help_text: |
+        The Dataplex location for the context lookup. If not specified, the location will be taken
+        from the dataplex/location property in your gcloud configuration.
+      spec: !REF googlecloudsdk.command_lib.dataplex.resources:location
+      is_positional: false
+    params:
+    - !REF googlecloudsdk.command_lib.dataplex.flags:resources
+    - arg_name: context-format
+      help_text: |
+        The output format of the command.
+      choices:
+      - arg_value: yaml
+      - arg_value: json
+      - arg_value: xml
+      default: yaml
+      is_positional: false
+    - arg_name: all-schema-fields
+      help_text: |
+        Includes all schema fields in the context.
+      type: bool
+      action: store_true
+      is_positional: false
+    - arg_name: options
+      help_text: |
+        Additional options for the command. This can be provided as a JSON string.
+        Example: --options='{"key": "value"}'
+      is_positional: false
+      required: false

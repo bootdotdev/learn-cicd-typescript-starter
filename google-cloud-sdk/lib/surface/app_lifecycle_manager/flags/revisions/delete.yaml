@@ -1,0 +1,44 @@
+- release_tracks: [ALPHA, BETA]
+  hints:
+    read_only: false
+  help_text:
+    brief: Delete Flag Revision
+    description: |-
+      Delete a flag revision resource.
+
+      This operation is permanent. To prevent production outages, ensure the revision
+      is no longer referenced by any active Flag Releases, Rollouts, UnitKinds, or
+      Units before it is deleted.
+
+      The safe deletion workflow is:
+
+        1. Confirm the FlagRevision is not used by any active Units or
+            UnitKinds (the baseline configuration).
+        2. If the revision is active, initiate a Rollout to detach it from
+            your fleet. This is typically done by rolling out a new FlagRelease
+            that references a different revision or, if the flag is being
+            decommissioned, a cleanup FlagRelease.
+        3. Run this delete command to permanently remove Flag Revision.
+    examples: |-
+      To delete a flag revision named `my-revision-v1` in the `global` location, run:
+
+          $ {command} my-revision-v1 --location=global
+
+      To delete a flag revision using a fully qualified resource name, run:
+
+          $ {command} projects/my-project/locations/global/flagRevisions/my-revision-v1
+
+      To delete a revision as part of a script without interactive confirmation, run:
+
+          $ {command} my-revision-v1 --location=global --quiet
+  arguments:
+    params:
+    - help_text: |-
+        Flag Revision ID of the Flag Revision to delete.
+      is_positional: true
+      resource_spec: !REF googlecloudsdk.command_lib.saas_runtime.resources:flag_revision
+      required: true
+  request:
+    api_version: v1beta1
+    collection:
+    - saasservicemgmt.projects.locations.flagRevisions

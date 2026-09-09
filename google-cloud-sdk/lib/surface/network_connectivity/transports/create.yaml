@@ -1,0 +1,196 @@
+- release_tracks: [BETA, GA]
+  help_text:
+    brief: Create a transport.
+    description: Create a transport with the given name to a remote provider.
+    BETA:
+      examples: |
+        To create a transport that generates a key to ``aws-us-east-1''.
+
+          $ {command} my-cci-aws --bandwidth 1G --profile aws-us-east-1 --remote-account-id 12345 --network default --advertised-routes '10.128.0.0/9'
+
+        To accept a key:
+
+          $ {command} my-cci-aws --activation-key ABC1234 --network default
+
+        To create a transport with an NCC hub:
+
+          $ {command} my-cci-aws --bandwidth 1G --profile aws-us-east-1 --remote-account-id 12345 --hub projects/12345/locations/us-central1/hubs/my-hub --auto-accept
+    GA:
+      examples: |
+        To create a transport that generates a key to ``aws-us-east-1''.
+
+          $ {command} my-cci-aws --bandwidth 1G --profile aws-us-east-1 --remote-account-id 12345 --network default --advertised-routes '10.128.0.0/9'
+
+        To accept a key:
+
+          $ {command} my-cci-aws --activation-key ABC1234 --network default
+
+  output:
+    format: yaml
+
+  async:
+    collection: networkconnectivity.projects.locations.operations
+
+  request:
+    collection: networkconnectivity.projects.locations.transports
+    BETA:
+      api_version: v1beta
+    GA:
+      api_version: v1
+
+  arguments:
+    resource:
+      spec: !REF googlecloudsdk.command_lib.network_connectivity.resources:transport
+      help_text: Name of the Transport to be created.
+      removed_flags: ['region']
+      command_level_fallthroughs:
+        region:
+        - arg_name: 'region'
+    params:
+    - arg_name: region
+      help_text: |
+         Google Cloud region for the transport. Applicable regions are those
+         where Partner Interconnect is available. For a list of supported regions, see
+         https://docs.cloud.google.com/network-connectivity/docs/interconnect/how-to/partner-cci-for-aws/paired-locations.
+    - group:
+        mutex: true
+        required: true
+        params:
+        - arg_name: network
+          resource_spec: !REF googlecloudsdk.command_lib.network_connectivity.compute_resources:network
+          resource_method_params:
+            BETA:
+              googleCloudNetworkconnectivityV1betaTransport.network: "{__relative_name__}"
+            GA:
+              transport.network: "{__relative_name__}"
+          help_text: VPC that will be peered to the provider via the Transport.
+        - group:
+            release_tracks: [BETA]
+            help_text: Parameters for creating a transport with an NCC hub.
+            required: false
+            mutex: false
+            params:
+            - arg_name: hub
+              resource_spec: !REF googlecloudsdk.command_lib.network_connectivity.resources:hub
+              resource_method_params:
+                BETA:
+                  googleCloudNetworkconnectivityV1betaTransport.hub: "{__relative_name__}"
+                GA:
+                  transport.hub: "{__relative_name__}"
+              help_text: Hub that the transport will be attached to.
+              required: true
+            - arg_name: auto-accept
+              type: bool
+              BETA:
+                api_field: googleCloudNetworkconnectivityV1betaTransport.autoAccept
+              GA:
+                api_field: transport.autoAccept
+              help_text: Whether to auto-accept spoke proposals for this transport.
+            - arg_name: psc-routing-enabled
+              type: bool
+              BETA:
+                api_field: googleCloudNetworkconnectivityV1betaTransport.pscRoutingEnabled
+              GA:
+                api_field: transport.pscRoutingEnabled
+              help_text: Whether a VPC spoke is created for PSC routing over the transport.
+    - arg_name: advertised-routes
+      BETA:
+        api_field: googleCloudNetworkconnectivityV1betaTransport.advertisedRoutes
+      GA:
+        api_field: transport.advertisedRoutes
+      help_text: List of routes to advertise from the VPC `network` toward the provider.
+      metavar: CIDR_RANGE
+    - group:
+        mutex: true
+        required: true
+        params:
+        - arg_name: activation-key
+          BETA:
+            api_field: googleCloudNetworkconnectivityV1betaTransport.providedActivationKey
+          GA:
+            api_field: transport.providedActivationKey
+          help_text: Key from the remote provider to establish a connection over the Transport.
+        - group:
+            help_text: These values must all be specified if Google is expected to generate the key.
+            params:
+            - arg_name: remote-profile
+              resource_spec: !REF googlecloudsdk.command_lib.network_connectivity.resources:remote_transport_profile
+              resource_method_params:
+                BETA:
+                  googleCloudNetworkconnectivityV1betaTransport.remoteProfile: "{__relative_name__}"
+                GA:
+                  transport.remoteProfile: "{__relative_name__}"
+              help_text: Remote transport profile representing the provider and their location.
+              required: true
+              removed_flags: ['region']
+              command_level_fallthroughs:
+                region:
+                - arg_name: 'region'
+            - arg_name: bandwidth
+              BETA:
+                api_field: googleCloudNetworkconnectivityV1betaTransport.bandwidth
+              GA:
+                api_field: transport.bandwidth
+              help_text: Bandwidth of the transport to create. Must be a supported bandwidth on the remote profile.
+              required: true
+              choices:
+              - arg_value: 50M
+                enum_value: BPS_50M
+              - arg_value: 100M
+                enum_value: BPS_100M
+              - arg_value: 200M
+                enum_value: BPS_200M
+              - arg_value: 300M
+                enum_value: BPS_300M
+              - arg_value: 400M
+                enum_value: BPS_400M
+              - arg_value: 500M
+                enum_value: BPS_500M
+              - arg_value: 1G
+                enum_value: BPS_1G
+              - arg_value: 2G
+                enum_value: BPS_2G
+              - arg_value: 5G
+                enum_value: BPS_5G
+              - arg_value: 10G
+                enum_value: BPS_10G
+              - arg_value: 20G
+                enum_value: BPS_20G
+              - arg_value: 50G
+                enum_value: BPS_50G
+              - arg_value: 100G
+                enum_value: BPS_100G
+            - arg_name: remote-account-id
+              BETA:
+                api_field: googleCloudNetworkconnectivityV1betaTransport.remoteAccountId
+              GA:
+                api_field: transport.remoteAccountId
+              help_text: Account ID in the remote provider to associate with the generated key.
+              required: true
+    - arg_name: description
+      BETA:
+        api_field: googleCloudNetworkconnectivityV1betaTransport.description
+      GA:
+        api_field: transport.description
+      help_text: Description of the transport.
+    - arg_name: stack-type
+      BETA:
+        api_field: googleCloudNetworkconnectivityV1betaTransport.stackType
+      GA:
+        api_field: transport.stackType
+      help_text: IP version of the routes to be exchanged.
+      choices:
+      - arg_value: ipv4-only
+      - arg_value: ipv4-ipv6
+      default: ipv4-only
+    - arg_name: enable-admin
+      type: bool
+      api_field: googleCloudNetworkconnectivityV1betaTransport.adminEnabled
+      help_text: Administrative state of the underlying connectivity.
+      default: true
+      release_tracks: [BETA]
+    labels:
+      BETA:
+        api_field: googleCloudNetworkconnectivityV1betaTransport.labels
+      GA:
+        api_field: transport.labels

@@ -1,0 +1,23 @@
+- release_tracks: [GA]
+
+  help_text:
+    brief: List operations
+    description: List operations
+    examples: |-
+      To list all operations, run:
+
+      $ {command}
+  arguments:
+    params:
+    - help_text: |-
+        The name of the operation's parent resource.
+      is_positional: false
+      resource_spec: !REF googlecloudsdk.command_lib.beyondcorp.default_resources:projects_locations
+      required: true
+  request:
+    GA:
+      api_version: v1
+    collection:
+    - beyondcorp.projects.locations.operations
+  response:
+    id_field: name

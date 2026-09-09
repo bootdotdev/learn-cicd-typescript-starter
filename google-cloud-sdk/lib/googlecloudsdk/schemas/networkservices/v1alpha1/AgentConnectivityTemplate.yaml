@@ -1,0 +1,92 @@
+$schema: "http://json-schema.org/draft-06/schema#"
+
+title: networkservices v1alpha1 AgentConnectivityTemplate export schema
+description: A gcloud export/import command YAML validation schema.
+type: object
+required:
+- accessPath
+- deploymentModel
+additionalProperties: false
+properties:
+  COMMENT:
+    type: object
+    description: User specified info ignored by gcloud import.
+    additionalProperties: false
+    properties:
+      template-id:
+        type: string
+      region:
+        type: string
+      description:
+        type: string
+      date:
+        type: string
+      version:
+        type: string
+  UNKNOWN:
+    type: array
+    description: Unknown API fields that cannot be imported.
+    items:
+      type: string
+  accessPath:
+    description: |-
+      Immutable. The path of the access. Maps roughly to ingress/egress, though
+      we keep CLIENT_TO_AGENT and AGENT_TO_ANYWHERE as carryovers from Agent
+      Gateway's original resource model. The path is immutable once set. Exactly
+      one path can be set.
+    type: string
+    enum:
+    - ACCESS_PATH_UNSPECIFIED
+    - AGENT_TO_ANYWHERE
+    - CLIENT_TO_AGENT
+  accessTypes:
+    description: |-
+      The types of network access provided to the gateway. Both PUBLIC and
+      PRIVATE can be configured.
+    type: array
+    items:
+      type: string
+      enum:
+      - ACCESS_TYPE_UNSPECIFIED
+      - PRIVATE
+      - PUBLIC
+  agentCompute:
+    description: |-
+      The compute environment where the agent is hosted. Exactly one type of
+      compute must be chosen.
+    type: string
+    enum:
+    - AGENT_COMPUTE_UNSPECIFIED
+    - BORG
+    - CLOUD_RUN
+    - GKE
+  deploymentModel:
+    description: The deployment model for the gateway.
+    type: string
+    enum:
+    - AMBIENT
+    - CENTRALIZED
+    - DEPLOYMENT_MODEL_UNSPECIFIED
+  description:
+    description: |-
+      A free-text description of the resource. Max length 1024 characters.
+    type: string
+  egressNetworkConfig:
+    description: Configuration for egress network traffic.
+    $ref: EgressNetworkConfig.yaml
+  etag:
+    description: |-
+      Etag of the resource. If this is provided, it must match the server's
+      etag. If the provided etag does not match the server's etag, the
+      request will fail with a 409 ABORTED error.
+    type: string
+  labels:
+    description: |-
+      Set of label tags associated with the AgentConnectivityTemplate
+      resource.
+    $ref: LabelsValue.yaml
+  name:
+    description: |-
+      Identifier. Name of the AgentConnectivityTemplate resource. It matches
+      pattern `projects/*/locations/*/agentConnectivityTemplates/`.
+    type: string

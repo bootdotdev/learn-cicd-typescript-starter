@@ -1,0 +1,323 @@
+# -*- coding: utf-8 -*- #
+# Copyright 2022 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Command for creating disks."""
+
+
+from googlecloudsdk.api_lib.compute import base_classes
+from googlecloudsdk.api_lib.compute import filter_rewrite
+from googlecloudsdk.api_lib.compute import utils
+from googlecloudsdk.calliope import base
+from googlecloudsdk.calliope import exceptions
+from googlecloudsdk.command_lib.compute import flags
+from googlecloudsdk.command_lib.compute.disks import flags as disks_flags
+from googlecloudsdk.core import log
+from googlecloudsdk.core import properties
+
+DETAILED_HELP = {
+    'brief':
+        """
+          Create multiple Compute Engine disks or a consistency group of instant snapshots.
+        """,
+    'DESCRIPTION':
+        """
+        *{command}* facilitates the creation of multiple Compute Engine
+        disks with a single command. This includes cloning a set of Async PD
+        secondary disks with the same consistency group policy or a consistency
+        group of instant snapshots.
+        """,
+    'EXAMPLES':
+        """
+        To consistently clone secondary disks with the same consistency group
+        policy 'projects/example-project/regions/us-central1/resourcePolicies/example-group-policy' to target zone 'us-central1-a', run:
+
+          $ {command} --source-consistency-group-policy=projects/example-project/regions/us-central1/resourcePolicies/example-group-policy --zone=us-central1-a
+        """,
+}
+
+
+def _AlphaArgs(parser):
+  disks_flags.AddBulkCreateArgsAlpha(parser)
+  disks_flags.SOURCE_INSTANT_SNAPSHOT_GROUP_ARG.AddArgument(parser)
+
+
+def _BetaArgs(parser):
+  disks_flags.AddBulkCreateArgsBeta(parser)
+  disks_flags.SOURCE_INSTANT_SNAPSHOT_GROUP_ARG.AddArgument(parser)
+
+
+def _CommonArgs(parser):
+  disks_flags.AddBulkCreateArgs(parser)
+  disks_flags.SOURCE_INSTANT_SNAPSHOT_GROUP_ARG.AddArgument(parser)
+
+
+def _GetOperations(compute_client,
+                   project,
+                   operation_group_id,
+                   scope_name,
+                   is_zonal):
+  """Requests operations with group id matching the given one."""
+
+  errors_to_collect = []
+
+  _, operation_filter = filter_rewrite.Rewriter().Rewrite(
+      expression='operationGroupId=' + operation_group_id)
+
+  if is_zonal:
+    operations_response = compute_client.MakeRequests(
+        [(compute_client.apitools_client.zoneOperations, 'List',
+          compute_client.apitools_client.zoneOperations.GetRequestType('List')(
+              filter=operation_filter, zone=scope_name, project=project))],
+        errors_to_collect=errors_to_collect,
+        log_result=False,
+        always_return_operation=True,
+        no_followup=True)
+  else:
+    operations_response = compute_client.MakeRequests(
+        [(compute_client.apitools_client.regionOperations, 'List',
+          compute_client.apitools_client.regionOperations.GetRequestType('List')
+          (filter=operation_filter, region=scope_name, project=project))],
+        errors_to_collect=errors_to_collect,
+        log_result=False,
+        always_return_operation=True,
+        no_followup=True)
+
+  return operations_response, errors_to_collect
+
+
+def _GetResult(compute_client, request, operation_group_id, parent_errors):
+  """Requests operations with group id and parses them as an output."""
+
+  is_zonal = hasattr(request, 'zone')
+  scope_name = request.zone if is_zonal else request.region
+  operations_response, errors = _GetOperations(compute_client, request.project,
+                                               operation_group_id, scope_name,
+                                               is_zonal)
+  result = {'operationGroupId': operation_group_id, 'createdDisksCount': 0}
+  if not parent_errors and not errors:
+    def IsPerDiskOperation(op):
+      return op.operationType == 'insert' and str(
+          op.status) == 'DONE' and op.error is None
+
+    result['createdDisksCount'] = sum(
+        map(IsPerDiskOperation, operations_response))
+  return result
+
+
+@base.DefaultUniverseOnly
+@base.ReleaseTracks(base.ReleaseTrack.GA, base.ReleaseTrack.PREVIEW)
+class BulkCreate(base.Command):
+  """Create multiple Compute Engine disks."""
+
+  @classmethod
+  def Args(cls, parser):
+    _CommonArgs(parser)
+
+  @classmethod
+  def _GetApiHolder(cls, no_http=False):
+    return base_classes.ComputeApiHolder(cls.ReleaseTrack(), no_http)
+
+  def Run(self, args):
+    return self._Run(args, support_multiple_source_restore=True)
+
+  def _Run(self, args, support_multiple_source_restore=False):
+    compute_holder = self._GetApiHolder()
+    client = compute_holder.client
+
+    policy_url = getattr(args, 'source_consistency_group_policy', None)
+    project = properties.VALUES.core.project.GetOrFail()
+    if not support_multiple_source_restore:
+      if args.IsSpecified('zone'):
+        request = client.messages.ComputeDisksBulkInsertRequest(
+            project=project,
+            zone=args.zone,
+            bulkInsertDiskResource=client.messages.BulkInsertDiskResource(
+                sourceConsistencyGroupPolicy=policy_url
+            ),
+        )
+        request = (client.apitools_client.disks, 'BulkInsert', request)
+      else:
+        request = client.messages.ComputeRegionDisksBulkInsertRequest(
+            project=project,
+            region=args.region,
+            bulkInsertDiskResource=client.messages.BulkInsertDiskResource(
+                sourceConsistencyGroupPolicy=policy_url
+            ),
+        )
+        request = (client.apitools_client.regionDisks, 'BulkInsert', request)
+    else:
+      isg_params = None
+      ssg_params = None
+      if policy_url is None:
+        isg_ref = (
+            disks_flags.SOURCE_INSTANT_SNAPSHOT_GROUP_ARG.ResolveAsResource(
+                args,
+                compute_holder.resources,
+                scope_lister=flags.GetDefaultScopeLister(client),
+            )
+        )
+        if isg_ref is not None:
+          isg_params = client.messages.InstantSnapshotGroupParameters(
+              sourceInstantSnapshotGroup=isg_ref.SelfLink(),
+          )
+        else:
+          # source-snapshot-group is only available in Alpha and Beta.
+          if hasattr(args, 'source_snapshot_group'):
+            ssg_ref = disks_flags.SOURCE_SNAPSHOT_GROUP_ARG.ResolveAsResource(
+                args,
+                compute_holder.resources,
+            )
+            if ssg_ref is not None:
+              ssg_dict = {
+                  'sourceSnapshotGroup': ssg_ref.SelfLink(),
+              }
+              if (
+                  hasattr(args, 'snapshot_group_params')
+                  and args.IsSpecified('snapshot_group_params')
+              ):
+                sg_params = args.snapshot_group_params
+                if 'type' in sg_params:
+                  if args.IsSpecified('zone'):
+                    disk_type_ref = compute_holder.resources.Parse(
+                        sg_params['type'],
+                        collection='compute.diskTypes',
+                        params={
+                            'project': project,
+                            'zone': args.zone
+                        })
+                  else:
+                    disk_type_ref = compute_holder.resources.Parse(
+                        sg_params['type'],
+                        collection='compute.regionDiskTypes',
+                        params={
+                            'project': project,
+                            'region': args.region
+                        })
+                  ssg_dict['type'] = disk_type_ref.SelfLink()
+                if 'replica-zones' in sg_params:
+                  if args.IsSpecified('zone'):
+                    raise exceptions.InvalidArgumentException(
+                        '--snapshot-group-params',
+                        'Replica zones cannot be specified for zonal disks.',
+                    )
+                  replica_zones = sg_params['replica-zones']
+                  if len(set(replica_zones)) != len(replica_zones):
+                    raise exceptions.InvalidArgumentException(
+                        '--snapshot-group-params',
+                        'Replica zones cannot be the same.',
+                    )
+                  if args.IsSpecified('region'):
+                    region = args.region
+                    for zone in replica_zones:
+                      if utils.ZoneNameToRegionName(zone) != region:
+                        raise exceptions.InvalidArgumentException(
+                            '--snapshot-group-params',
+                            'Replica zone [{}] is not in region [{}].'.format(
+                                zone, region
+                            ),
+                        )
+                  replica_zones_urls = []
+                  for zone in replica_zones:
+                    zone_ref = compute_holder.resources.Parse(
+                        zone,
+                        collection='compute.zones',
+                        params={'project': project})
+                    replica_zones_urls.append(zone_ref.SelfLink())
+                  ssg_dict['replicaZones'] = replica_zones_urls
+              ssg_params = client.messages.SnapshotGroupParameters(**ssg_dict)
+      if args.IsSpecified('zone'):
+        request = client.messages.ComputeDisksBulkInsertRequest(
+            project=project,
+            zone=args.zone,
+            bulkInsertDiskResource=client.messages.BulkInsertDiskResource(
+                sourceConsistencyGroupPolicy=policy_url,
+                instantSnapshotGroupParameters=isg_params,
+                snapshotGroupParameters=ssg_params))
+        request = (client.apitools_client.disks, 'BulkInsert', request)
+      else:
+        request = client.messages.ComputeRegionDisksBulkInsertRequest(
+            project=project,
+            region=args.region,
+            bulkInsertDiskResource=client.messages.BulkInsertDiskResource(
+                sourceConsistencyGroupPolicy=policy_url,
+                instantSnapshotGroupParameters=isg_params,
+                snapshotGroupParameters=ssg_params))
+        request = (client.apitools_client.regionDisks, 'BulkInsert', request)
+    errors_to_collect = []
+    response = client.MakeRequests([request],
+                                   errors_to_collect=errors_to_collect,
+                                   no_followup=True,
+                                   always_return_operation=True)
+
+    # filters error object so that only error message is persisted
+    if errors_to_collect:
+      # workaround to change errors_to_collect since tuples are immutable
+      for i in range(len(errors_to_collect)):
+        error_tuple = errors_to_collect[i]
+        error_list = list(error_tuple)
+        # When requests are accepted, but workflow server processed it
+        # exceptionally, the error message is in message field. However, when
+        # requests are rejected, message field doesn't exist, we don't need to
+        # extract error message from message field.
+        if hasattr(error_list[1], 'message'):
+          error_list[1] = error_list[1].message
+        errors_to_collect[i] = tuple(error_list)
+    self._errors = errors_to_collect
+    if not response:
+      return
+    operation_group_id = response[0].operationGroupId
+    result = _GetResult(client, request[2], operation_group_id,
+                        errors_to_collect)
+
+    if response[0].statusMessage:
+      result['statusMessage'] = response[0].statusMessage
+    return result
+
+  def Epilog(self, resources_were_displayed):
+    del resources_were_displayed
+    if self._errors:
+      log.error(self._errors[0][1])
+
+BulkCreate.detailed_help = DETAILED_HELP
+
+
+@base.ReleaseTracks(base.ReleaseTrack.BETA)
+class BulkCreateBeta(BulkCreate):
+  """Create multiple Compute Engine disks."""
+
+  @classmethod
+  def Args(cls, parser):
+    _BetaArgs(parser)
+
+  def Run(self, args):
+    return self._Run(args,
+                     support_multiple_source_restore=True)
+
+
+BulkCreateBeta.detailed_help = DETAILED_HELP
+
+
+@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
+class BulkCreateAlpha(BulkCreate):
+  """Create multiple Compute Engine disks."""
+
+  @classmethod
+  def Args(cls, parser):
+    _AlphaArgs(parser)
+
+  def Run(self, args):
+    return self._Run(args,
+                     support_multiple_source_restore=True)
+
+BulkCreateAlpha.detailed_help = DETAILED_HELP

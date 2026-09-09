@@ -1,0 +1,40 @@
+- release_tracks: [ALPHA, BETA, GA]
+  help_text:
+    brief: Describe the given composite index.
+    description: |
+      Describe the given composite index.
+
+      By default, this command pretty prints a summary of the index specification.
+      For the full index specification, please specify a format using the
+      `--format=json|yaml|text|etc.` flag. For more information about format, run
+      `$ gcloud topic formats`.
+    examples: |
+      The following command describes the composite index with ID `3421ef`:
+
+        $ {command} 3421ef
+
+        $ {command} 3421ef --database=(default)
+
+  request:
+    collection: firestore.projects.databases.collectionGroups.indexes
+
+  arguments:
+    resource:
+      help_text: Index to describe.
+      spec: !REF googlecloudsdk.command_lib.firestore.resources:index
+      removed_flags:
+      - collection-group
+
+  output:
+    # TODO(b/540544612): Replace with raw json format if spec grows larger.
+    format: "table[all-box](\
+               name.basename(),\
+               name.segment(-3):label=COLLECTION_GROUP,\
+               queryScope,\
+               state,\
+               apiScope,\
+               fields.*extract('fieldPath').*flatten().join('\n'):label=FIELD_PATHS,\
+               fields.*extract('order').*flatten().join('\n'):label=ORDER:optional,\
+               fields.*extract('arrayConfig').*flatten().join('\n'):label=ARRAY_CONFIG:optional,\
+               fields.*extract('vectorConfig').*extract('dimension').*flatten().join('\n'):label=VECTOR_CONFIG:optional,\
+               fields.*extract('searchConfig').**list(show='keys', separator=', ').*sub('Spec', '').*upper().*flatten().join('\n'):label=SEARCH_CONFIG:optional)"

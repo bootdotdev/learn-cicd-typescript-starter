@@ -1,0 +1,573 @@
+# -*- coding: utf-8 -*- #
+# Copyright 2024 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Clients for interacting with Storage Batch Operations."""
+
+from typing import Any, List, Optional, TYPE_CHECKING, TypedDict
+from apitools.base.py import list_pager
+from googlecloudsdk.api_lib.storage import errors
+from googlecloudsdk.api_lib.storage import storage_batch_operations_util
+from googlecloudsdk.api_lib.util import apis as core_apis
+from googlecloudsdk.core import properties
+from googlecloudsdk.core.util import times
+
+if TYPE_CHECKING:
+  # pylint: disable=g-import-not-at-top
+  from googlecloudsdk.generated_clients.apis.storagebatchoperations.v1 import storagebatchoperations_v1_messages as storage_messages
+
+
+class GrantDict(TypedDict, total=False):
+  entity: str
+  role: str
+
+
+class SetObjectAclsDict(TypedDict, total=False):
+  grants: List[GrantDict]
+  remove_entities: List[str]
+
+
+# Backend has a limit of 500.
+PAGE_SIZE = 500
+
+
+def _get_parent_string(project, location):
+  return "projects/{}/locations/{}".format(project, location)
+
+
+class StorageBatchOperationsApi:
+  """Client for Storage Batch Operations API."""
+
+  def __init__(self):
+    self.client = core_apis.GetClientInstance("storagebatchoperations", "v1")
+    self.messages: Any = core_apis.GetMessagesModule(
+        "storagebatchoperations", "v1"
+    )
+
+  def _instantiate_job_with_source(
+      self,
+      bucket_names: List[str],
+      manifest_location: Optional[str] = None,
+      included_object_prefixes: Optional[List[str]] = None,
+      description: Optional[str] = None,
+      dry_run: bool = False,
+  ):
+    """Instatiates a Job object using the source and description provided.
+
+    Args:
+      bucket_names: Bucket names that contain the source objects described by
+        the manifest or prefix list.
+      manifest_location: Absolute path to the manifest source file in a Google
+        Cloud Storage bucket.
+      included_object_prefixes: list of object prefixes to describe the objects
+        being transformed.
+      description: Description of the job.
+      dry_run: If true, job will be created in dry run mode.
+
+    Returns:
+      A Job object.
+    """
+    # empty prefix list is still allowed and considered set.
+    prefix_list_set = included_object_prefixes is not None
+    if bool(manifest_location) == prefix_list_set:
+      raise errors.StorageBatchOperationsApiError(
+          "Exactly one of manifest-location or included-object-prefixes must be"
+          " specified."
+      )
+    job = self.messages.Job(
+        description=description,
+    )
+    if dry_run:
+      job.dryRun = True
+    if manifest_location:
+      manifest_payload = self.messages.Manifest(
+          manifestLocation=manifest_location,
+      )
+      job.bucketList = self.messages.BucketList(buckets=[])
+      for bucket_name in bucket_names:
+        job.bucketList.buckets.append(
+            self.messages.Bucket(
+                bucket=bucket_name,
+                manifest=manifest_payload,
+            )
+        )
+    else:
+      prefix_list = (
+          storage_batch_operations_util.process_included_object_prefixes(
+              included_object_prefixes
+          )
+      )
+      job.bucketList = self.messages.BucketList(buckets=[])
+      for bucket_name in bucket_names:
+        job.bucketList.buckets.append(
+            self.messages.Bucket(
+                bucket=bucket_name,
+                prefixList=prefix_list,
+            )
+        )
+    return job
+
+  def _instantiate_job_with_project_source(
+      self,
+      *,
+      target_project: Optional[str] = None,
+      insights_dataset_config: Optional[str] = None,
+      bucket_filters: Optional[str] = None,
+      object_filters: Optional[str] = None,
+      dry_run_job_id: Optional[str] = None,
+      target_locations: Optional[List[str]] = None,
+      target_snapshot_time: Optional[str] = None,
+      description: Optional[str] = None,
+      dry_run: bool = False,
+  ):
+    """Instantiates a Job object using ProjectSource.
+
+    Args:
+      target_project: Target project to run the job on.
+      insights_dataset_config: Insights dataset config.
+      bucket_filters: CEL expression for bucket filters.
+      object_filters: CEL expression for object filters.
+      dry_run_job_id: Dry run job ID.
+      target_locations: List of target locations.
+      target_snapshot_time: Target snapshot timestamp in RFC 3339 format. Can
+        only be specified if `target_locations` is also provided.
+      description: Description of the job.
+      dry_run: If true, job will be created in dry run mode.
+
+    Returns:
+      A Job object.
+    """
+    job = self.messages.Job(
+        description=description,
+    )
+    if dry_run:
+      job.dryRun = True
+
+    project_source = self.messages.ProjectSource()
+    if target_project is not None:
+      # Prepend 'projects/' if not already present.
+      project_name = (
+          target_project if target_project.startswith("projects/")
+          else f"projects/{target_project}"
+      )
+      project_source.project = project_name
+    if insights_dataset_config is not None:
+      project_source.insightsDatasetConfig = insights_dataset_config
+    if bucket_filters is not None:
+      project_source.bucketFilters = self.messages.Expr(
+          expression=bucket_filters
+      )
+    if object_filters is not None:
+      project_source.objectFilters = self.messages.Expr(
+          expression=object_filters
+      )
+    if dry_run_job_id is not None:
+      project_source.dryRunJobId = dry_run_job_id
+
+    if target_locations is not None:
+      target_locations_msg = self.messages.TargetLocations(
+          locations=target_locations,
+          snapshotTime=target_snapshot_time,
+      )
+      project_source.targetLocations = target_locations_msg
+
+    job.projectSource = project_source
+    return job
+
+  def _create_job(self, batch_job_name: str, job):
+    """Creates a job by building a CreateJobRequest and calling Create.
+
+    Args:
+      batch_job_name: Resource name of the batch job.
+      job: A Job object to create.
+
+    Returns:
+      A longrunning operation representing the batch job.
+    """
+    parent, job_id = (
+        storage_batch_operations_util.get_job_id_and_parent_string_from_resource_name(
+            batch_job_name
+        )
+    )
+    create_job_request = (
+        self.messages.StoragebatchoperationsProjectsLocationsJobsCreateRequest(
+            job=job, jobId=job_id, parent=parent
+        )
+    )
+    return self.client.projects_locations_jobs.Create(create_job_request)
+
+  def _modify_job_put_object_hold(
+      self,
+      job,
+      put_object_temporary_hold,
+      put_object_event_based_hold,
+  ):
+    """Modifies a job to put object on hold."""
+    job.putObjectHold = self.messages.PutObjectHold()
+    if put_object_temporary_hold is not None:
+      job.putObjectHold.temporaryHold = (
+          self.messages.PutObjectHold.TemporaryHoldValueValuesEnum.SET
+          if put_object_temporary_hold
+          else self.messages.PutObjectHold.TemporaryHoldValueValuesEnum.UNSET
+      )
+    if put_object_event_based_hold is not None:
+      job.putObjectHold.eventBasedHold = (
+          self.messages.PutObjectHold.EventBasedHoldValueValuesEnum.SET
+          if put_object_event_based_hold
+          else self.messages.PutObjectHold.EventBasedHoldValueValuesEnum.UNSET
+      )
+
+  def _modify_job_rewrite_object(self, job, rewrite_object_dict):
+    """Modifies a job to rewrite object and the specified metadata."""
+    rewrite_object = self.messages.RewriteObject()
+    if rewrite_object_dict.get("kms-key"):
+      rewrite_object.kmsKey = rewrite_object_dict["kms-key"]
+    if rewrite_object_dict.get("storage-class"):
+      try:
+        rewrite_object.storageClass = (
+            self.messages.RewriteObject.StorageClassValueValuesEnum(
+                rewrite_object_dict["storage-class"].upper()
+            )
+        )
+      except TypeError as exc:
+        valid_classes = (
+            self.messages.RewriteObject.StorageClassValueValuesEnum.to_dict().keys()
+        )
+        raise errors.StorageBatchOperationsApiError(
+            "Invalid value for storage-class:"
+            f' {rewrite_object_dict["storage-class"]}. Must be one of'
+            f" {valid_classes}."
+        ) from exc
+    job.rewriteObject = rewrite_object
+
+  def _modify_job_put_metadata(self, job, put_metadata_dict):
+    """Modifies a job to put metadata.
+
+    Args:
+      job: A Job object to modify.
+      put_metadata_dict: A dictionary of metadata fields and values to apply.
+
+    Raises:
+      errors.StorageBatchOperationsApiError: If an invalid value is provided
+        for "retention-mode".
+    """
+    put_metadata = self.messages.PutMetadata()
+    custom_metadata_value = self.messages.PutMetadata.CustomMetadataValue()
+    object_retention = self.messages.ObjectRetention()
+    is_object_retention_set = False
+    # put_metadata_dict is garanteed to have at least one key-value pair.
+    for key, value in put_metadata_dict.items():
+      lower_key = key.casefold()
+      if lower_key == "content-disposition":
+        put_metadata.contentDisposition = value
+      elif lower_key == "content-encoding":
+        put_metadata.contentEncoding = value
+      elif lower_key == "content-language":
+        put_metadata.contentLanguage = value
+      elif lower_key == "content-type":
+        put_metadata.contentType = value
+      elif lower_key == "cache-control":
+        put_metadata.cacheControl = value
+      elif lower_key == "custom-time":
+        put_metadata.customTime = value
+      elif lower_key == "retain-until":
+        is_object_retention_set = True
+        if value:
+          object_retention.retainUntilTime = value
+      elif lower_key == "retention-mode":
+        is_object_retention_set = True
+        if value:
+          try:
+            retention_mode_enum = (
+                self.messages.ObjectRetention.RetentionModeValueValuesEnum(
+                    value.upper()
+                )
+            )
+            object_retention.retentionMode = retention_mode_enum
+          except TypeError as exc:
+            valid_modes = (
+                self.messages.ObjectRetention.RetentionModeValueValuesEnum.to_dict().keys()
+            )
+            raise errors.StorageBatchOperationsApiError(
+                f"Invalid value for retention-mode: {value}. Must be one of"
+                f" {valid_modes}."
+            ) from exc
+      else:
+        custom_metadata_value.additionalProperties.append(
+            self.messages.PutMetadata.CustomMetadataValue.AdditionalProperty(
+                key=key, value=value
+            )
+        )
+    if custom_metadata_value.additionalProperties:
+      put_metadata.customMetadata = custom_metadata_value
+    if is_object_retention_set:
+      put_metadata.objectRetention = object_retention
+    job.putMetadata = put_metadata
+
+  def _modify_job_update_object_custom_context(
+      self,
+      job,
+      clear_all_object_custom_contexts=None,
+      update_object_custom_contexts=None,
+      update_object_custom_contexts_file=None,
+      clear_object_custom_contexts=None,
+  ):
+    """Modifies a job to update object custom contexts."""
+    update_object_custom_context = self.messages.UpdateObjectCustomContext()
+    if clear_all_object_custom_contexts:
+      update_object_custom_context.clearAll = True
+    else:
+      custom_context_updates = self.messages.CustomContextUpdates()
+      if clear_object_custom_contexts:
+        custom_context_updates.keysToClear = clear_object_custom_contexts
+
+      if update_object_custom_contexts:
+        updates_dict = {}
+        for key, value in update_object_custom_contexts.items():
+          updates_dict[key] = value
+        if updates_dict:
+          updates = self.messages.CustomContextUpdates.UpdatesValue()
+          for key, value in updates_dict.items():
+            updates.additionalProperties.append(
+                self.messages.CustomContextUpdates.UpdatesValue.AdditionalProperty(
+                    key=key,
+                    value=self.messages.ObjectCustomContextPayload(value=value),
+                )
+            )
+          custom_context_updates.updates = updates
+      elif update_object_custom_contexts_file:
+        updates = storage_batch_operations_util.parse_custom_contexts_file(
+            update_object_custom_contexts_file
+        )
+
+        custom_context_updates.updates = updates
+
+      update_object_custom_context.customContextUpdates = custom_context_updates
+    job.updateObjectCustomContext = update_object_custom_context
+
+  def _modify_job_set_object_acls(
+      self,
+      job: "storage_messages.Job",
+      set_object_acls_dict: SetObjectAclsDict,
+  ) -> None:
+    """Modifies a job to set object ACLs."""
+    grants = set_object_acls_dict.get("grants")
+    remove_entities = set_object_acls_dict.get("remove_entities")
+    if not grants and not remove_entities:
+      raise errors.StorageBatchOperationsApiError(
+          "At least one of grants or remove_entities must be specified."
+      )
+
+    updates_kwargs = {}
+    if grants is not None:
+      updates_kwargs["grants"] = [
+          self.messages.ObjectAccessControl(
+              entity=grant.get("entity"), role=grant.get("role")
+          )
+          for grant in grants
+      ]
+
+    if remove_entities is not None:
+      updates_kwargs["removeEntities"] = remove_entities
+
+    job.setObjectAcls = self.messages.SetObjectAcls(
+        accessControlsUpdates=self.messages.AccessControlsUpdates(
+            **updates_kwargs
+        )
+    )
+
+  def _modify_job_logging_config(self, job, log_actions, log_action_states):
+    """Modifies a job to create logging config."""
+    logging_config = self.messages.LoggingConfig()
+    actions = []
+    for action in log_actions:
+      actions.append(
+          getattr(
+              logging_config.LogActionsValueListEntryValuesEnum, action.upper()
+          )
+      )
+    logging_config.logActions = actions
+
+    action_states = []
+    for action_state in log_action_states:
+      action_states.append(
+          getattr(
+              logging_config.LogActionStatesValueListEntryValuesEnum,
+              action_state.upper(),
+          )
+      )
+    logging_config.logActionStates = action_states
+    job.loggingConfig = logging_config
+
+  def create_batch_job(self, args, batch_job_name):
+    """Creates a batch job based on command arguments."""
+    if (
+        getattr(args, "target_project", None) is not None
+        or getattr(args, "dry_run_job_id", None) is not None
+    ):
+      target_snapshot_time = getattr(args, "target_snapshot_time", None)
+      if target_snapshot_time:
+        target_snapshot_time = times.FormatDateTime(
+            target_snapshot_time,
+            "%Y-%m-%dT%H:%M:%S.%6f%Ez",
+            tzinfo=times.UTC,
+        )
+      job = self._instantiate_job_with_project_source(
+          target_project=args.target_project,
+          insights_dataset_config=getattr(
+              args, "insights_dataset_config", None
+          ),
+          bucket_filters=getattr(args, "bucket_filters", None),
+          object_filters=getattr(args, "object_filters", None),
+          dry_run_job_id=getattr(args, "dry_run_job_id", None),
+          target_locations=getattr(args, "target_locations", None),
+          target_snapshot_time=target_snapshot_time,
+          description=args.description,
+          dry_run=getattr(args, "dry_run", False),
+      )
+    else:
+      bucket_names = getattr(args, "bucket_list", None) or [args.bucket]
+      job = self._instantiate_job_with_source(
+          bucket_names,
+          manifest_location=args.manifest_location,
+          included_object_prefixes=args.included_object_prefixes,
+          description=args.description,
+          dry_run=getattr(args, "dry_run", False),
+      )
+    if (
+        args.put_object_temporary_hold is not None
+        or args.put_object_event_based_hold is not None
+    ):
+      self._modify_job_put_object_hold(
+          job, args.put_object_temporary_hold, args.put_object_event_based_hold
+      )
+    elif args.delete_object:
+      job.deleteObject = self.messages.DeleteObject(
+          permanentObjectDeletionEnabled=args.enable_permanent_object_deletion,
+      )
+    elif args.rewrite_object:
+      self._modify_job_rewrite_object(job, args.rewrite_object)
+    elif args.put_metadata:
+      self._modify_job_put_metadata(job, args.put_metadata)
+    elif (
+        getattr(args, "clear_all_object_custom_contexts", None)
+        or getattr(args, "update_object_custom_contexts", None)
+        or getattr(args, "update_object_custom_contexts_file", None)
+        or getattr(args, "clear_object_custom_contexts", None)
+    ):
+      self._modify_job_update_object_custom_context(
+          job,
+          clear_all_object_custom_contexts=getattr(
+              args, "clear_all_object_custom_contexts", None
+          ),
+          update_object_custom_contexts=getattr(
+              args, "update_object_custom_contexts", None
+          ),
+          update_object_custom_contexts_file=getattr(
+              args, "update_object_custom_contexts_file", None
+          ),
+          clear_object_custom_contexts=getattr(
+              args, "clear_object_custom_contexts", None
+          ),
+      )
+    elif getattr(args, "set_object_acls_from_file", None):
+      self._modify_job_set_object_acls(job, args.set_object_acls_from_file)
+    else:
+      raise errors.StorageBatchOperationsApiError(
+          "Exactly one transformation must be specified."
+      )
+
+    if args.log_actions and args.log_action_states:
+      self._modify_job_logging_config(
+          job, args.log_actions, args.log_action_states
+      )
+    elif args.log_actions or args.log_action_states:
+      raise errors.StorageBatchOperationsApiError(
+          "Both --log-actions and --log-action-states are required for a"
+          " complete log config."
+      )
+    return self._create_job(batch_job_name, job)
+
+  def get_batch_job(self, batch_job_name):
+    """Gets a batch job by resource name."""
+    return self.client.projects_locations_jobs.Get(
+        self.messages.StoragebatchoperationsProjectsLocationsJobsGetRequest(
+            name=batch_job_name
+        )
+    )
+
+  def delete_batch_job(self, batch_job_name, force=None):
+    """Deletes a batch job by resource name."""
+    request = (
+        self.messages.StoragebatchoperationsProjectsLocationsJobsDeleteRequest(
+            name=batch_job_name
+        )
+    )
+    if force is not None:
+      request.force = force
+    return self.client.projects_locations_jobs.Delete(request)
+
+  def list_batch_jobs(self, location=None, page_size=None):
+    if location:
+      parent_string = _get_parent_string(
+          properties.VALUES.core.project.Get(), location
+      )
+    else:
+      parent_string = _get_parent_string(
+          properties.VALUES.core.project.Get(), "-"
+      )
+    return list_pager.YieldFromList(
+        self.client.projects_locations_jobs,
+        self.messages.StoragebatchoperationsProjectsLocationsJobsListRequest(
+            parent=parent_string,
+        ),
+        batch_size=page_size if page_size else PAGE_SIZE,
+        batch_size_attribute="pageSize",
+        field="jobs",
+    )
+
+  def get_bucket_operation(self, bucket_operation_name):
+    """Gets a bucket operation by resource name."""
+    return self.client.projects_locations_jobs_bucketOperations.Get(
+        self.messages.StoragebatchoperationsProjectsLocationsJobsBucketOperationsGetRequest(
+            name=bucket_operation_name
+        )
+    )
+
+  def list_bucket_operations(
+      self, batch_job_name, bucket_names=None, page_size=None
+  ):
+    """Lists bucket operations for a batch job."""
+    filter_expression = None
+    if bucket_names:
+      filter_expression = " OR ".join(
+          ['bucket_name="{}"'.format(bucket) for bucket in bucket_names]
+      )
+    return list_pager.YieldFromList(
+        self.client.projects_locations_jobs_bucketOperations,
+        self.messages.StoragebatchoperationsProjectsLocationsJobsBucketOperationsListRequest(
+            parent=batch_job_name,
+            filter=filter_expression,
+        ),
+        batch_size=page_size if page_size else PAGE_SIZE,
+        batch_size_attribute="pageSize",
+        field="bucketOperations",
+    )
+
+  def cancel_batch_job(self, batch_job_name):
+    """Cancels a batch job by resource name."""
+    return self.client.projects_locations_jobs.Cancel(
+        self.messages.StoragebatchoperationsProjectsLocationsJobsCancelRequest(
+            name=batch_job_name
+        )
+    )

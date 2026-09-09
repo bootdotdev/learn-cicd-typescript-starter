@@ -1,0 +1,272 @@
+- release_tracks: [ALPHA, BETA]
+  hints:
+    read_only: false
+  help_text:
+    brief: Update Flag
+    description: |-
+      Update the definition of a feature flag. This command modifies the flag's
+      configuration such as variants, evaluation logic, or metadata within its parent UnitKind.
+
+      Feature flags follow a lifecycle managed through their state:
+
+      The `in-development` state is the initial state for a feature flag. It indicates that the flag
+      is currently being defined, variants are being added, and evaluation logic is being refined.
+      Flags in this state are typically used for initial setup and testing and are not yet intended
+      for production rollouts.
+
+      The `active` state is the default state for a feature flag. It signifies that the flag is in
+      use, authorized for production rollouts, and actively being evaluated by application services.
+      Active flags are included in configuration manifests and release snapshots for the fleet.
+
+      The `sunsetting` state indicates that a feature flag is being phased out. It serves as a
+      signal to engineering teams that the code associated with the flag should be removed. While
+      still functional, sunsetting flags should not be used for new feature logic and are candidates
+      for future cleanup.
+
+      When a flag is no longer needed, its state can be updated to `cleanup`. Performing a rollout
+      with a flag in this state will remove all its revisions from the Units. This is a mandatory
+      step in the flag deletion flow.
+
+      Note that updating a flag definition does not immediately change the flag's value in
+      production units. To apply these changes to your fleet, you must subsequently create a new
+      FlagRelease and initiate a Rollout. This architecture enables the decoupling of feature
+      releases from code deployments, facilitating safe, progressive rollouts and instant rollbacks.
+    examples: |-
+      To initialize a flag in the in-development state for testing, run:
+
+          $ {command} my-flag --location=global --state=in-development
+
+      To guarantee a flag is active for a new production rollout, run:
+
+          $ {command} my-flag --location=global --state=active
+
+      To update the variants of a boolean flag, run:
+
+          $ {command} my-flag --location=global --variants='[{"id": "Enabled", "booleanValue": true}, {"id": "Disabled", "booleanValue": false}]'
+
+      To mark a flag as sunsetting to signal code removal, run:
+
+          $ {command} my-flag --location=global --state=sunsetting --description="Feature fully launched. Starting code removal."
+
+      To mark a flag for cleanup (remove from Units in the next rollout), run:
+
+          $ {command} my-flag --location=global --state=cleanup --description="Ready for permanent deletion."
+
+      To update which flag set a flag is associated with, run:
+
+          $ {command} my-flag --location=global --flag-set=new-flag-set
+
+      To update a percentage rollout (50% Enabled) using a userID attribute, run:
+
+          $ {command} my-flag --location=global --evaluation-spec='{"allocations": [{"id": "p10", "randomizedOn": "userID", "slots": [{"variant": "Disabled", "weight": 50}, {"variant": "Enabled", "weight": 50}]}], "defaultTarget": "p10", "attributes": ["projects/my-project/locations/global/flagAttributes/id-attr"]}'
+
+      To update a flag with progressive rollout using dynamic allocations, run:
+
+          $ {command} my-flag --location=global --evaluation-spec='{"dynamicAllocations": [{"id": "p10", "randomizedOn": "userID", "initialVariant": "Disabled", "finalVariant": "Enabled"}], "defaultDynamicAllocation": "p10"}'
+
+      To add labels to a flag, run:
+
+          $ {command} my-flag --location=global --labels=environment=prod,team=frontend
+
+      To clear optional fields, run:
+
+          $ {command} my-flag --location=global --clear-description --clear-flag-set --clear-labels --clear-annotations
+  arguments:
+    params:
+    - help_text: |-
+        ID of the Flag:
+
+          "projects/{project}/locations/{location}/flags/{flag_id}"
+
+        This follows the standard Google Cloud naming scheme (URI).
+      is_positional: true
+      request_id_field: flagId
+      resource_spec: !REF googlecloudsdk.command_lib.saas_runtime.resources:flag
+      required: true
+
+    - arg_name: evaluation-spec
+      api_field: flag.evaluationSpec
+      help_text: |-
+        Specification of how the Flag value should be evaluated.
+      is_positional: false
+      required: false
+      repeated: false
+      spec:
+      - api_field: defaultTarget
+        help_text: |-
+          Default variant for the flag.
+      - api_field: defaultDynamicAllocation
+        help_text: |-
+          The ID of a dynamic allocation to use as the default.
+      - api_field: dynamicAllocations
+        help_text: |-
+          A list of dynamic allocations.
+        spec:
+        - api_field: id
+          help_text: |-
+            Id of the dynamic allocation.
+            Max length: 128 bytes.
+        - api_field: randomizedOn
+          help_text: |-
+            Key of the context attribute that is used for traffic splitting.
+        - api_field: description
+          help_text: |-
+            A description of the dynamic allocation.
+            Max length: 500 bytes.
+        - api_field: initialVariant
+          help_text: |-
+            Initial variant to return for this allocation when not fully rolled out.
+        - api_field: finalVariant
+          help_text: |-
+            Final variant to return for this allocation when fully rolled out.
+        - api_field: salt
+          help_text: |-
+            Salt for hash generation.
+      - api_field: allocations
+        help_text: |-
+          A list of allocations.
+        spec:
+        - api_field: id
+          help_text: |-
+            Id of the allocation.
+            Max length: 128 bytes.
+        - api_field: randomizedOn
+          help_text: |-
+            Key of the context attribute that is used for traffic splitting.
+        - api_field: description
+          help_text: |-
+            A description of the allocation.
+            Max length: 500 bytes.
+        - api_field: slots
+          help_text: |-
+            Slots defines the weighted distribution of variants.
+          spec:
+          - api_field: variant
+            help_text: |-
+              Variant of the allocation slot.
+          - api_field: weight
+            help_text: |-
+              Weight defines the proportion of traffic to allocate to the variant,
+              relative to other slots in the same allocation.
+      - api_field: rules
+        help_text: |-
+          Define the logic for evaluating the flag against a given context.
+          The rules are evaluated sequentially in their specified order.
+        spec:
+        - api_field: condition
+          help_text: |-
+            A Common Expression Language (CEL cel.dev) expression evaluated against the evaluation context.
+            For example: `plan == "premium" && country == "DE"`.
+        - api_field: id
+          help_text: |-
+            A unique identifier for the rule.
+        - api_field: target
+          help_text: |-
+            The ID of the variant to return if the condition evaluates to true.
+      - api_field: attributes
+        help_text: |-
+          Names of the context attributes that are used in the evaluation rules and allocations.
+
+    - arg_name: flag-set
+      api_field: flag.flagSet
+      help_text: |-
+        Flag set this flag belongs to.
+      is_positional: false
+      required: false
+      repeated: false
+      clearable: true
+
+    - arg_name: variants
+      api_field: flag.variants
+      help_text: |-
+        A list of variants.
+        Variant is an identifier for a value (name assigned to a value).
+      is_positional: false
+      required: false
+      repeated: true
+      spec:
+      - api_field: id
+        help_text: |-
+          Id of the variant.
+          Max length: 128 bytes.
+      - api_field: description
+        help_text: |-
+          A description of the variant.
+          Max length: 500 bytes.
+      - api_field: booleanValue
+        help_text: |-
+          Value is a single boolean flag value for the variant.
+      - api_field: integerValue
+        help_text: |-
+          Value is a single integer flag value for the variant.
+      - api_field: stringValue
+        help_text: |-
+          Value is a single string flag value for the variant.
+          Max length: 500 bytes.
+      - api_field: doubleValue
+        help_text: |-
+          Value is a single double flag value for the variant.
+
+    - arg_name: description
+      api_field: flag.description
+      clearable: true
+      required: false
+      help_text: |-
+        A description of the flag. Max length: 500 bytes.
+      is_positional: false
+
+    - arg_name: state
+      api_field: flag.state
+      help_text: |-
+        Current state of the flag.
+      is_positional: false
+      required: false
+      repeated: false
+      choices:
+      - arg_value: in-development
+        enum_value: FLAG_STATE_IN_DEVELOPMENT
+        help_text: |-
+          The flag is currently in the in-development state.
+      - arg_value: active
+        enum_value: FLAG_STATE_ACTIVE
+        help_text: |-
+          The flag is in the active state.
+      - arg_value: sunsetting
+        enum_value: FLAG_STATE_SUNSETTING
+        help_text: |-
+          The flag is in the sunsetting state, indicating it is being phased out.
+      - arg_value: cleanup
+        enum_value: FLAG_STATE_CLEANUP
+        help_text: |-
+          The flag is in the cleanup state and ready to be deleted.
+
+    - arg_name: labels
+      api_field: flag.labels
+      clearable: true
+      required: false
+      repeated: true
+      help_text: |-
+        The labels on the resource, which can be used for categorization.
+      spec:
+      - api_field: key
+      - api_field: value
+
+    - arg_name: annotations
+      api_field: flag.annotations
+      clearable: true
+      required: false
+      repeated: true
+      help_text: |-
+        Unstructured key-value map stored with a resource that may be set by
+        external tools to store and retrieve arbitrary metadata. Annotations
+        are not queryable and should be preserved when modifying objects.
+      spec:
+      - api_field: key
+      - api_field: value
+
+  request:
+    api_version: v1beta1
+    collection:
+    - saasservicemgmt.projects.locations.flags
+  update:
+    read_modify_update: true

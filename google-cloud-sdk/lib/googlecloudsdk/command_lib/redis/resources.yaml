@@ -1,0 +1,146 @@
+project:
+  name: project
+  collection: redis.projects
+  attributes:
+  - parameter_name: projectsId
+    attribute_name: project
+    help: |
+      The project name.
+    property: core/project
+
+region:
+  name: region
+  collection: redis.projects.locations
+  attributes:
+  - &region
+    parameter_name: locationsId
+    attribute_name: region
+    help: |
+      The name of the Redis region of the {resource}. Overrides the default
+      redis/region property value for this command invocation.
+    property: redis/region
+  disable_auto_completers: false
+
+region_without_property:
+  name: region
+  collection: redis.projects.locations
+  attributes:
+  - parameter_name: locationsId
+    attribute_name: region
+    help: |
+      The name of the Redis region.
+  disable_auto_completers: false
+
+operation:
+  name: operation
+  collection: redis.projects.locations.operations
+  attributes:
+  - *region
+  - parameter_name: operationsId
+    attribute_name: operation
+    help: The name of the Redis operation.
+  disable_auto_completers: false
+
+instance:
+  name: instance
+  collection: redis.projects.locations.instances
+  request_id_field: instanceId
+  attributes:
+  - *region
+  - parameter_name: instancesId
+    attribute_name: instance
+    help: The name of the Redis instance.
+  disable_auto_completers: false
+
+cluster:
+  name: cluster
+  collection: redis.projects.locations.clusters
+  request_id_field: clusterId
+  attributes:
+  - *region
+  - parameter_name: clustersId
+    attribute_name: cluster
+    help: The name of the Redis cluster
+  disable_auto_completers: false
+
+backup_collection:
+  name: backup collection
+  collection: redis.projects.locations.backupCollections
+  request_id_field: backupCollectionId
+  attributes:
+  - *region
+  - parameter_name: backupCollectionsId
+    attribute_name: backup-collection
+    help: The name of the Redis cluster backup collection.
+  disable_auto_completers: false
+
+backup:
+  name: backup
+  collection: redis.projects.locations.backupCollections.backups
+  request_id_field: backupId
+  attributes:
+  - *region
+  - parameter_name: backupCollectionsId
+    attribute_name: backup-collection
+    help: The name of the Redis cluster backup collection.
+  - parameter_name: backupsId
+    attribute_name: backup
+    help: The name of the Redis cluster backup.
+  disable_auto_completers: false
+
+acl_policy:
+  name: acl policy
+  collection: redis.projects.locations.aclPolicies
+  request_id_field: aclPolicyId
+  attributes:
+  - *region
+  - parameter_name: aclPoliciesId
+    attribute_name: acl-policy
+    help: The ID of the ACL Policy.
+  disable_auto_completers: false
+
+acl_policy_revision:
+  name: revision
+  plural_name: revisions
+  collection: redis.projects.locations.aclPolicies.revisions
+  attributes:
+  - *region
+  - parameter_name: aclPoliciesId
+    attribute_name: acl-policy
+    help: The ID of the ACL Policy.
+  - &revision
+    parameter_name: revisionsId
+    attribute_name: revision
+    help: The revision id of the {resource} resource.
+  disable_auto_completers: false
+
+token_auth_user:
+  name: token auth user
+  collection: redis.projects.locations.clusters.tokenAuthUsers
+  request_id_field: tokenAuthUserId
+  attributes:
+  - *region
+  - parameter_name: clustersId
+    attribute_name: cluster
+    help: The name of the Redis cluster.
+  - parameter_name: tokenAuthUsersId
+    attribute_name: token-auth-user
+    help: The name of the Redis cluster token auth user.
+  disable_auto_completers: false
+
+auth_token:
+  name: auth token
+  collection: redis.projects.locations.clusters.tokenAuthUsers.authTokens
+  request_id_field: authTokenId
+  attributes:
+  - *region
+  - parameter_name: clustersId
+    attribute_name: cluster
+    help: The name of the Redis cluster.
+  - parameter_name: tokenAuthUsersId
+    attribute_name: token-auth-user
+    help: The name of the Redis cluster token auth user.
+  - parameter_name: authTokensId
+    attribute_name: auth-token
+    help: The name of the Redis cluster auth token.
+  disable_auto_completers: false
