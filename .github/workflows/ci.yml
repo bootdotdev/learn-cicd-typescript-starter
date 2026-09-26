@@ -40,5 +40,5 @@ jobs:
       - name: Install dependencies
         run: npm ci # ci => clean install
 
-      - name: Test your code formatting
+      - name: Check formatting
         run: npm run format:check
