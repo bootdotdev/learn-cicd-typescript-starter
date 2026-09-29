@@ -4,6 +4,10 @@
   "main": "dist/main.js",
   "type": "module",
   "scripts": {
+    "lint": "eslint src",
+    "test": "vitest --run",
+    "format:write": "prettier --write \"src/**/*.{js,ts,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{js,ts,json,css,md}\"",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
@@ -12,13 +16,21 @@
     "dev": "npx tsc && node dist/main.js"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/cors": "^2.8.17",
+    "@types/eslint-plugin-security": "^3.0.1",
     "@types/express": "^5.0.0",
     "@types/node": "^22.9.0",
+    "@vitest/coverage-v8": "^4.1.11",
     "drizzle-kit": "^0.28.1",
-    "globals": "^15.12.0",
+    "eslint": "^10.11.0",
+    "eslint-plugin-security": "^4.1.0",
+    "globals": "^15.15.0",
+    "prettier": "3.9.9",
     "tsx": "^4.19.2",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.71.0",
+    "vitest": "^4.1.11"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",
