@@ -1,0 +1,26 @@
+
+name: cd
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  tests:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+
+      - name: Install all dependencies
+        run: npm ci
+
+      - name: Run our app
+        run: npm run build
