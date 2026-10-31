@@ -48,8 +48,6 @@ app.listen(config.api.port, () => {
   console.log(`Server is running on port: ${config.api.port}`);
 });
 
-
 function unused() {
   // n´thia
 }
-
