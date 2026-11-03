@@ -11,6 +11,7 @@ jobs:
     env:
       IMAGE_NAME: us-central1-docker.pkg.dev/notely-513117/notely-ar-repo/my-app
       IMAGE_TAG: ${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
     permissions:
       contents: read
       id-token: write
@@ -46,6 +47,9 @@ jobs:
 
       - name: Build and push Docker image
         run: gcloud builds submit --project notely-513117 --tag "$IMAGE_NAME:$IMAGE_TAG" .
+
+      - name: Run database migrations
+        run: npm run db:migrate
 
       - name: Deploy to Cloud Run
         run: gcloud run deploy notely --image "$IMAGE_NAME:$IMAGE_TAG" --region us-central1 --allow-unauthenticated --project notely-513117 --max-instances=4
