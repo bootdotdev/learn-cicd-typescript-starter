@@ -2,8 +2,8 @@ name: ci
 
 on:
   pull_request:
-  branches: 
-    - main
+    branches:
+      - main
 
 jobs:
   tests:
@@ -20,4 +20,4 @@ jobs:
           node-version: 22
 
       - name: Check Node Version
-        run: node --version && exit 0 
+        run: node --version && exit 0
