@@ -46,3 +46,6 @@ jobs:
 
         # - name: Prettier write
         #   run: npm run format:write
+
+        - name: Run lint
+          run: npm run lint
