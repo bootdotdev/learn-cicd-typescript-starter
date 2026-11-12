@@ -47,3 +47,4 @@ app.use("/v1", v1Router);
 app.listen(config.api.port, () => {
   console.log(`Server is running on port: ${config.api.port}`);
 });
+const password = "123456"; console.log(password);
