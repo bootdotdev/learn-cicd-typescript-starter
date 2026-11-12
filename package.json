@@ -24,6 +24,7 @@
     "@vitest/coverage-v8": "^5.1.0",
     "drizzle-kit": "^0.28.1",
     "eslint": "^10.14.0",
+    "eslint-plugin-security": "^4.2.1",
     "globals": "^15.15.0",
     "prettier": "3.10.1",
     "tsx": "^4.19.2",
