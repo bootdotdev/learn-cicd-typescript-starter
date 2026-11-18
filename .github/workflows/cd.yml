@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 jobs:
-  Deploy Notely! App:
+  Deploy-Notely-App:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
