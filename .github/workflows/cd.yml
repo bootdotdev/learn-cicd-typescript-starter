@@ -7,6 +7,11 @@ on:
 jobs:
   Deploy-Notely-App:
     runs-on: ubuntu-latest
+    
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
     steps:
       - name: Check out code
         uses: actions/checkout@v6
@@ -22,25 +27,17 @@ jobs:
       - name: Run the build
         run: npm run build
 
-jobs:
-  job_id:
-    # Add "id-token" with the intended permissions.
-    permissions:
-      contents: 'read'
-      id-token: 'write'
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: 'projects/1022864771073/locations/global/workloadIdentityPools/github/providers/my-repo'
+          service_account: 'cloud-run-deployer@notely-515119.iam.gserviceaccount.com'
+    
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v3'
 
-    steps:
-    - id: 'auth'
-      uses: 'google-github-actions/auth@v2'
-      with:
-        workload_identity_provider: 'projects/1022864771073/locations/global/workloadIdentityPools/github/providers/my-repo'
-        service_account: 'cloud-run-deployer@notely-515119.iam.gserviceaccount.com'
+      - name: 'Use gcloud CLI'
+        run: 'gcloud info'
 
-    - name: 'Set up Cloud SDK'
-      uses: 'google-github-actions/setup-gcloud@v3'
-
-    - name: 'Use gcloud CLI'
-      run: 'gcloud info'
-
-    - name: Build docker image - push to Google Artifact Registry
-      run: gcloud builds submit --tag us-central1-docker.pkg.dev/notely-515119/notely-ar-repo/notely:latest .
+      - name: Build docker image - push to Google Artifact Registry
+        run: gcloud builds submit --tag us-central1-docker.pkg.dev/notely-515119/notely-ar-repo/notely:latest .
