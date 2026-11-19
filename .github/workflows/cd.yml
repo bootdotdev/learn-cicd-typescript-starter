@@ -5,7 +5,8 @@ on:
     branches: [main]
 
 jobs:
-  Deploy:
+  Deploy-Notely-App:
+    name: Deploy
     runs-on: ubuntu-latest
     
     permissions:
