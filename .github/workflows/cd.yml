@@ -28,7 +28,7 @@ jobs:
         run: npm run build
 
       - id: 'auth'
-        uses: 'google-github-actions/auth@v2'
+        uses: 'google-github-actions/auth@v3'
         with:
           workload_identity_provider: 'projects/1022864771073/locations/global/workloadIdentityPools/github/providers/my-repo'
           service_account: 'cloud-run-deployer@notely-515119.iam.gserviceaccount.com'
